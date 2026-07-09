@@ -257,7 +257,7 @@ el('form-login').addEventListener('submit', async (evento) => {
             el('login-erro').hidden = false;
             return;
         }
-        usuarioAtual = { email: usuario.email, nome: usuario.nome, papel: usuario.papel };
+        usuarioAtual = { email: usuario.email, nome: usuario.nome, papel: usuario.papel, foto: usuario.foto || '' };
         el('login-erro').hidden = true;
         el('login-senha').value = '';
         revelarSistema();
@@ -269,10 +269,15 @@ el('form-login').addEventListener('submit', async (evento) => {
     el(id).addEventListener('input', () => { el('login-erro').hidden = true; }));
 
 el('botao-sair').addEventListener('click', async () => {
-    if (MODO === 'supabase' && sb) await sb.auth.signOut();
+    try {
+        if (MODO === 'supabase' && sb) await sb.auth.signOut({ scope: 'local' });
+    } catch (e) {
+        console.error('Erro ao sair:', e);
+    }
     usuarioAtual     = null;
     sistema.hidden   = true;
     telaLogin.hidden = false;
+    el('login-senha').value = '';
 });
 
 // Entra a partir de uma sessão válida do Supabase
@@ -294,7 +299,7 @@ async function entrarComSessao(session) {
         persistir();
     }
     const papel = (email === ADMIN_EMAIL || registro.papel === 'admin') ? 'admin' : 'colaborador';
-    usuarioAtual = { email, nome: registro.nome || email.split('@')[0], papel };
+    usuarioAtual = { email, nome: registro.nome || email.split('@')[0], papel, foto: registro.foto || '' };
 
     el('login-erro').hidden = true;
     el('login-senha').value = '';
@@ -328,16 +333,40 @@ function revelarSistema() {
    6. USUÁRIOS DO SISTEMA (perfil admin nas Configurações)
 ============================================================ */
 
+function iniciaisDe(usuario) {
+    const base = String(usuario.nome || usuario.email || '').replace(/[^0-9a-zA-ZÀ-ú]/g, '');
+    return base.slice(0, 2).toUpperCase() || 'LU';
+}
+
+function registroUsuarioAtual() {
+    if (!usuarioAtual || !estado) return null;
+    return estado.usuarios.find((u) => (u.email || '').toLowerCase() === usuarioAtual.email.toLowerCase()) || null;
+}
+
+// Mostra a foto (se houver) ou as iniciais dentro de um avatar
+function pintarAvatar(elemento, foto, iniciais) {
+    if (!elemento) return;
+    if (foto) {
+        elemento.textContent = '';
+        elemento.style.backgroundImage = `url("${foto}")`;
+    } else {
+        elemento.style.backgroundImage = '';
+        elemento.textContent = iniciais;
+    }
+}
+
 function aplicarUsuarioNaInterface() {
     if (!usuarioAtual) return;
 
     const rotulo   = usuarioAtual.nome || usuarioAtual.email.split('@')[0];
-    const iniciais = rotulo.replace(/[^0-9a-zA-ZÀ-ú]/g, '').slice(0, 2).toUpperCase() || 'LU';
+    const iniciais = iniciaisDe(usuarioAtual);
+    const foto     = usuarioAtual.foto || (registroUsuarioAtual() || {}).foto || '';
 
-    el('usuario-nome').textContent   = rotulo;
-    el('usuario-papel').textContent  = usuarioAtual.papel === 'admin' ? 'Admin · Financeiro' : 'Colaborador';
-    el('avatar-sidebar').textContent = iniciais;
-    el('avatar-topbar').textContent  = iniciais;
+    el('usuario-nome').textContent  = rotulo;
+    el('usuario-papel').textContent = usuarioAtual.papel === 'admin' ? 'Admin · Financeiro' : 'Colaborador';
+    pintarAvatar(el('avatar-sidebar'), foto, iniciais);
+    pintarAvatar(el('avatar-topbar'),  foto, iniciais);
+    pintarAvatar(el('preview-foto'),   foto, iniciais);
 
     const cardUsuarios = el('card-usuarios');
     cardUsuarios.hidden = usuarioAtual.papel !== 'admin';
@@ -439,6 +468,54 @@ el('form-senha').addEventListener('submit', async (e) => {
 
     el('form-senha').reset();
     alert('Senha alterada com sucesso!');
+});
+
+/* ---- Foto de perfil (própria conta) ---- */
+
+// Recorta no centro e reduz a imagem para um quadrado pequeno,
+// mantendo o dado leve para caber no banco.
+function redimensionarFoto(file, tamanho, cb) {
+    const reader = new FileReader();
+    reader.onload = () => {
+        const img = new Image();
+        img.onload = () => {
+            const canvas = document.createElement('canvas');
+            canvas.width = canvas.height = tamanho;
+            const ctx  = canvas.getContext('2d');
+            const lado = Math.min(img.width, img.height);
+            const sx = (img.width - lado) / 2;
+            const sy = (img.height - lado) / 2;
+            ctx.drawImage(img, sx, sy, lado, lado, 0, 0, tamanho, tamanho);
+            cb(canvas.toDataURL('image/jpeg', 0.85));
+        };
+        img.onerror = () => alert('Não foi possível ler esta imagem.');
+        img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+}
+
+el('input-foto').addEventListener('change', (e) => {
+    const file = e.target.files && e.target.files[0];
+    e.target.value = '';
+    if (!file || !usuarioAtual) return;
+    if (!file.type.startsWith('image/')) { alert('Escolha um arquivo de imagem.'); return; }
+
+    redimensionarFoto(file, 160, (dataURL) => {
+        const reg = registroUsuarioAtual();
+        if (reg) reg.foto = dataURL;
+        usuarioAtual.foto = dataURL;
+        persistir();
+        aplicarUsuarioNaInterface();
+    });
+});
+
+el('btn-remover-foto').addEventListener('click', () => {
+    if (!usuarioAtual) return;
+    const reg = registroUsuarioAtual();
+    if (reg) delete reg.foto;
+    delete usuarioAtual.foto;
+    persistir();
+    aplicarUsuarioNaInterface();
 });
 
 
@@ -1525,15 +1602,14 @@ function configurarModoNaTela() {
         banner.hidden = false;
         banner.classList.add('modo-banner--nuvem');
         banner.textContent = '☁ Conectado ao Supabase — dados compartilhados entre todos os computadores.';
-        document.body.style.paddingTop = '34px';
-        setTimeout(() => { banner.hidden = true; document.body.style.paddingTop = '0'; }, 4000);
+        setTimeout(() => { banner.hidden = true; }, 4000);
 
         el('login-dica').innerHTML =
             'Use o e-mail e a senha cadastrados no Supabase.';
     } else {
         banner.hidden = false;
         banner.innerHTML = '⚠ Modo local (demonstração) — os dados ficam só neste navegador. Preencha o <strong>config.js</strong> para ativar o Supabase.';
-        document.body.style.paddingTop = '34px';
+        document.body.style.setProperty('--banner-altura', '34px');
 
         el('login-dica').innerHTML =
             `Primeiro acesso: <strong>${esc(ADMIN_EMAIL)}</strong> · senha <strong>${SENHA_PADRAO}</strong><br>` +
