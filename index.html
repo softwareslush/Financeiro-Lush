@@ -1,0 +1,841 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="LUSH. Finance — Sistema de Gestão e Análise Financeira">
+    <title>LUSH. Finance — Gestão Financeira</title>
+
+    <!-- Tipografia da marca: Space Grotesk (Google Fonts) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Estilos do sistema -->
+    <link rel="stylesheet" href="style.css">
+
+    <!-- Supabase (banco de dados + login) via CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+
+    <!-- Chart.js via CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js" defer></script>
+
+    <!-- Suas chaves do Supabase (edite o config.js) + script do sistema -->
+    <script src="config.js" defer></script>
+    <script src="script.js" defer></script>
+</head>
+<body>
+
+    <!-- Aviso de modo de funcionamento (local x nuvem) — controlado pelo script.js -->
+    <div class="modo-banner" id="modo-banner" hidden></div>
+
+    <!-- ============================================================
+         TELA DE LOGIN
+    ============================================================ -->
+    <section class="login" id="tela-login" aria-label="Tela de login">
+        <form class="login__card" id="form-login" novalidate>
+            <img class="login__logo" src="assets/lush-logo-branco.svg" alt="LUSH. Global Marketing">
+
+            <h1 class="login__titulo">Gestão Financeira</h1>
+            <p class="login__subtitulo">Acesse o painel para acompanhar receitas, despesas e resultados.</p>
+
+            <div class="campo">
+                <label class="campo__rotulo" for="login-email">E-mail</label>
+                <input class="campo__entrada" type="email" id="login-email"
+                       name="email" placeholder="voce@lush.com" autocomplete="email" required>
+            </div>
+
+            <div class="campo">
+                <label class="campo__rotulo" for="login-senha">Senha</label>
+                <input class="campo__entrada" type="password" id="login-senha"
+                       name="senha" placeholder="••••••••" autocomplete="current-password" required>
+            </div>
+
+            <p class="login__erro" id="login-erro" hidden>E-mail ou senha incorretos.</p>
+
+            <button class="botao botao--primario login__entrar" type="submit">Entrar</button>
+
+            <p class="login__dica" id="login-dica"></p>
+        </form>
+    </section>
+
+    <!-- ============================================================
+         SISTEMA (LAYOUT BASE)
+    ============================================================ -->
+    <div class="sistema" id="sistema" hidden>
+
+        <!-- ---------- MENU LATERAL (SIDEBAR) ---------- -->
+        <aside class="sidebar" id="sidebar" aria-label="Menu principal">
+            <img class="sidebar__logo" src="assets/lush-logo-branco.svg" alt="LUSH. Global Marketing">
+
+            <nav class="sidebar__nav">
+                <button class="sidebar__item is-ativo" type="button" data-secao="visao-geral">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
+                    Visão Geral
+                </button>
+                <button class="sidebar__item" type="button" data-secao="receitas">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 14l5-5 5 5H7z"/><path d="M12 3a9 9 0 100 18 9 9 0 000-18zm0 16a7 7 0 110-14 7 7 0 010 14z"/></svg>
+                    Receitas
+                </button>
+                <button class="sidebar__item" type="button" data-secao="carteira">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 11c1.66 0 3-1.34 3-3S17.66 5 16 5s-3 1.34-3 3 1.34 3 3 3zm-8 0c1.66 0 3-1.34 3-3S9.66 5 8 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5C15 14.17 10.33 13 8 13zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
+                    Carteira de Clientes
+                </button>
+                <button class="sidebar__item" type="button" data-secao="despesas">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10l5 5 5-5H7z"/><path d="M12 3a9 9 0 100 18 9 9 0 000-18zm0 16a7 7 0 110-14 7 7 0 010 14z"/></svg>
+                    Despesas
+                </button>
+                <button class="sidebar__item" type="button" data-secao="configuracoes">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19.4 13a7.6 7.6 0 000-2l2.1-1.6a.5.5 0 00.1-.7l-2-3.4a.5.5 0 00-.6-.2l-2.5 1a7.7 7.7 0 00-1.7-1L14.4 2.4a.5.5 0 00-.5-.4h-4a.5.5 0 00-.5.4l-.4 2.7a7.7 7.7 0 00-1.7 1l-2.5-1a.5.5 0 00-.6.2l-2 3.4a.5.5 0 00.1.7L4.6 11a7.6 7.6 0 000 2l-2.1 1.6a.5.5 0 00-.1.7l2 3.4c.1.2.4.3.6.2l2.5-1a7.7 7.7 0 001.7 1l.4 2.7c0 .2.2.4.5.4h4c.2 0 .4-.2.5-.4l.4-2.7a7.7 7.7 0 001.7-1l2.5 1c.2.1.5 0 .6-.2l2-3.4a.5.5 0 00-.1-.7L19.4 13zM12 15.5a3.5 3.5 0 110-7 3.5 3.5 0 010 7z"/></svg>
+                    Configurações
+                </button>
+            </nav>
+
+            <footer class="sidebar__rodape">
+                <span class="avatar" aria-hidden="true" id="avatar-sidebar">LU</span>
+                <div class="sidebar__usuario">
+                    <strong id="usuario-nome">Equipe LUSH</strong>
+                    <small id="usuario-papel">Financeiro</small>
+                </div>
+                <button class="sidebar__sair" type="button" id="botao-sair" title="Sair do sistema" aria-label="Sair do sistema">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 13v-2H7V8l-5 4 5 4v-3h9zm3-10H11a2 2 0 00-2 2v3h2V5h8v14h-8v-3H9v3a2 2 0 002 2h8a2 2 0 002-2V5a2 2 0 00-2-2z"/></svg>
+                </button>
+            </footer>
+        </aside>
+
+        <div class="sidebar-overlay" id="sidebar-overlay" hidden></div>
+
+        <!-- ---------- ÁREA PRINCIPAL ---------- -->
+        <main class="conteudo">
+
+            <header class="topbar">
+                <button class="topbar__menu" type="button" id="botao-menu" aria-label="Abrir menu">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18v2H3V6zm0 5h18v2H3v-2zm0 5h18v2H3v-2z"/></svg>
+                </button>
+                <div class="topbar__titulos">
+                    <h2 id="titulo-secao">Visão Geral</h2>
+                    <p id="data-atual"></p>
+                </div>
+
+                <!-- Central de notificações (lembretes de cobrança) -->
+                <div class="notificacoes">
+                    <button class="topbar__sino" type="button" id="botao-notificacoes" aria-label="Notificações">
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.1-1.6-5.6-4.5-6.3V4a1.5 1.5 0 10-3 0v.7C7.6 5.4 6 7.9 6 11v5l-2 2v1h16v-1l-2-2z"/></svg>
+                        <span class="topbar__badge" id="badge-notificacoes" hidden>0</span>
+                    </button>
+                    <div class="notificacoes__painel" id="painel-notificacoes" hidden>
+                        <h4>Notificações</h4>
+                        <p class="notificacoes__aviso">Lembretes de envio de NF, recibo e cobrança — visíveis para o admin e todos os colaboradores.</p>
+                        <ul class="notificacoes__lista" id="lista-notificacoes"></ul>
+                    </div>
+                </div>
+
+                <span class="avatar" aria-hidden="true" id="avatar-topbar">LU</span>
+            </header>
+
+            <!-- ===== SEÇÃO: VISÃO GERAL ===== -->
+            <section class="secao is-ativa" id="secao-visao-geral" aria-label="Visão geral">
+                <div class="cards-resumo">
+                    <article class="card card-resumo">
+                        <p class="card-resumo__rotulo">Saldo em Caixa</p>
+                        <strong class="card-resumo__valor" data-valor="saldo">—</strong>
+                        <span class="selo selo--positivo" data-variacao="saldo">—</span>
+                    </article>
+
+                    <article class="card card-resumo card-resumo--receita">
+                        <p class="card-resumo__rotulo">Receitas do Mês</p>
+                        <strong class="card-resumo__valor" data-valor="receitas">—</strong>
+                        <span class="selo selo--positivo" data-variacao="receitas">—</span>
+                    </article>
+
+                    <article class="card card-resumo card-resumo--despesa">
+                        <p class="card-resumo__rotulo">Despesas do Mês</p>
+                        <strong class="card-resumo__valor" data-valor="despesas">—</strong>
+                        <span class="selo selo--negativo" data-variacao="despesas">—</span>
+                    </article>
+
+                    <article class="card card-resumo card-resumo--resultado">
+                        <p class="card-resumo__rotulo">Resultado do Mês</p>
+                        <strong class="card-resumo__valor" data-valor="resultado">—</strong>
+                        <span class="selo selo--positivo" data-variacao="resultado">receitas − despesas</span>
+                    </article>
+                </div>
+
+                <div class="graficos">
+                    <article class="card grafico">
+                        <h3 class="grafico__titulo">Entradas vs. Saídas <small>últimos 6 meses</small></h3>
+                        <div class="grafico__area">
+                            <canvas id="grafico-barras" role="img" aria-label="Gráfico de barras comparando entradas e saídas mensais"></canvas>
+                        </div>
+                    </article>
+
+                    <article class="card grafico">
+                        <h3 class="grafico__titulo">Despesas por Categoria <small>mês atual</small></h3>
+                        <div class="grafico__area">
+                            <canvas id="grafico-rosca" role="img" aria-label="Gráfico de rosca com a distribuição das despesas por categoria"></canvas>
+                        </div>
+                    </article>
+                </div>
+            </section>
+
+            <!-- ===== SEÇÃO: RECEITAS ===== -->
+            <section class="secao" id="secao-receitas" aria-label="Receitas">
+                <div class="abas" role="tablist">
+                    <button class="aba is-ativa" type="button" data-aba="recorrentes">Clientes Recorrentes</button>
+                    <button class="aba" type="button" data-aba="unicos">Projetos Únicos</button>
+                    <button class="aba" type="button" data-aba="upsells">Upsells</button>
+                </div>
+
+                <!-- ABA 1: Clientes de base -->
+                <div class="painel-aba is-ativa" id="aba-recorrentes">
+                    <article class="card">
+                        <header class="card__cabecalho">
+                            <div>
+                                <h3>Clientes de base</h3>
+                                <p class="card__descricao">Contratos recorrentes — a ficha guarda CNPJ, contatos, emissão de NF e recorrência de pagamento.</p>
+                            </div>
+                            <button class="botao botao--primario" type="button" id="botao-novo-cliente">+ Novo Cliente</button>
+                        </header>
+                        <div class="tabela__scroll">
+                            <table class="tabela">
+                                <thead>
+                                    <tr>
+                                        <th>Empresa</th>
+                                        <th>CNPJ</th>
+                                        <th>Recorrência</th>
+                                        <th>Faturamento</th>
+                                        <th class="alinha-direita">Valor</th>
+                                        <th class="alinha-direita">Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tabela-clientes"></tbody>
+                            </table>
+                        </div>
+                    </article>
+                </div>
+
+                <!-- ABA 2: Projetos únicos -->
+                <div class="painel-aba" id="aba-unicos">
+                    <article class="card">
+                        <header class="card__cabecalho">
+                            <div>
+                                <h3>Projetos únicos &amp; freelas</h3>
+                                <p class="card__descricao">Entregas pontuais — o sistema valida se o orçamento mantém a margem mínima de 20% sobre os custos.</p>
+                            </div>
+                            <button class="botao botao--primario" type="button" id="botao-novo-projeto">+ Novo Projeto</button>
+                        </header>
+                        <div class="tabela__scroll">
+                            <table class="tabela">
+                                <thead>
+                                    <tr>
+                                        <th>Empresa</th>
+                                        <th>Serviço</th>
+                                        <th>Entrega</th>
+                                        <th class="alinha-direita">Custos</th>
+                                        <th class="alinha-direita">Orçamento</th>
+                                        <th>Margem</th>
+                                        <th class="alinha-direita">Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tabela-projetos"></tbody>
+                            </table>
+                        </div>
+                    </article>
+                </div>
+
+                <!-- ABA 3: Upsells -->
+                <div class="painel-aba" id="aba-upsells">
+                    <article class="card">
+                        <header class="card__cabecalho">
+                            <div>
+                                <h3>Upsells</h3>
+                                <p class="card__descricao">Vendas adicionais registradas para os clientes de base.</p>
+                            </div>
+                            <button class="botao botao--primario" type="button" id="botao-novo-upsell">+ Registrar Upsell</button>
+                        </header>
+                        <div class="tabela__scroll">
+                            <table class="tabela">
+                                <thead>
+                                    <tr>
+                                        <th>Cliente</th>
+                                        <th>Descrição</th>
+                                        <th>Data</th>
+                                        <th class="alinha-direita">Valor</th>
+                                        <th class="alinha-direita">Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tabela-upsells"></tbody>
+                                <tfoot>
+                                    <tr>
+                                        <td colspan="3">Total registrado</td>
+                                        <td class="alinha-direita valor--receita" id="total-upsells">R$ 0,00</td>
+                                        <td></td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </article>
+                </div>
+            </section>
+
+            <!-- ===== SEÇÃO: CARTEIRA DE CLIENTES ===== -->
+            <section class="secao" id="secao-carteira" aria-label="Carteira de clientes">
+                <header class="carteira__topo">
+                    <p class="card__descricao">Visão completa da base recorrente — mensalidades, contratos no Drive e orientações para os responsáveis. Clientes criados aqui entram automaticamente nas Receitas.</p>
+                    <button class="botao botao--primario" type="button" id="botao-cliente-carteira">+ Novo Cliente</button>
+                </header>
+
+                <div class="carteira" id="grade-carteira"></div>
+            </section>
+
+            <!-- ===== SEÇÃO: DESPESAS (SAÍDAS) ===== -->
+            <section class="secao" id="secao-despesas" aria-label="Despesas">
+                <article class="card grafico margem-baixo">
+                    <h3 class="grafico__titulo">Fluxo de caixa projetado <small>entradas e saídas previstas por dia do mês</small></h3>
+                    <div class="grafico__area">
+                        <canvas id="grafico-fluxo" role="img" aria-label="Projeção diária de entradas, saídas e saldo acumulado do mês"></canvas>
+                    </div>
+                </article>
+
+                <div class="abas" role="tablist">
+                    <button class="aba is-ativa" type="button" data-aba="fixas">Despesas Fixas</button>
+                    <button class="aba" type="button" data-aba="colaboradores">Colaboradores</button>
+                    <button class="aba" type="button" data-aba="variaveis">Despesas Variáveis</button>
+                </div>
+
+                <!-- ABA 1: Despesas fixas -->
+                <div class="painel-aba is-ativa" id="aba-fixas">
+                    <article class="card">
+                        <header class="card__cabecalho">
+                            <div>
+                                <h3>Despesas fixas</h3>
+                                <p class="card__descricao">Compromissos que se repetem todo mês — aluguel, assinaturas, contabilidade.</p>
+                            </div>
+                            <button class="botao botao--primario" type="button" id="botao-nova-fixa">+ Nova Despesa Fixa</button>
+                        </header>
+                        <div class="tabela__scroll">
+                            <table class="tabela">
+                                <thead>
+                                    <tr>
+                                        <th>Descrição</th>
+                                        <th>Categoria</th>
+                                        <th>Vencimento</th>
+                                        <th class="alinha-direita">Valor</th>
+                                        <th class="alinha-direita">Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tabela-fixas"></tbody>
+                            </table>
+                        </div>
+                    </article>
+                </div>
+
+                <!-- ABA 2: Colaboradores -->
+                <div class="painel-aba" id="aba-colaboradores">
+                    <article class="card">
+                        <header class="card__cabecalho">
+                            <div>
+                                <h3>Colaboradores</h3>
+                                <p class="card__descricao">Folha da equipe — a ficha guarda contato, CPF, chave PIX e o dia de pagamento.</p>
+                            </div>
+                            <button class="botao botao--primario" type="button" id="botao-novo-colaborador">+ Novo Colaborador</button>
+                        </header>
+                        <div class="tabela__scroll">
+                            <table class="tabela">
+                                <thead>
+                                    <tr>
+                                        <th>Colaborador</th>
+                                        <th>Contato</th>
+                                        <th>CPF</th>
+                                        <th>Chave PIX</th>
+                                        <th>Pagamento</th>
+                                        <th class="alinha-direita">Valor</th>
+                                        <th class="alinha-direita">Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tabela-colaboradores"></tbody>
+                            </table>
+                        </div>
+                    </article>
+                </div>
+
+                <!-- ABA 3: Despesas variáveis -->
+                <div class="painel-aba" id="aba-variaveis">
+                    <article class="card">
+                        <header class="card__cabecalho">
+                            <div>
+                                <h3>Despesas variáveis</h3>
+                                <p class="card__descricao">Gastos pontuais do mês — mídia paga, freelas, compras avulsas.</p>
+                            </div>
+                            <button class="botao botao--primario" type="button" id="botao-nova-variavel">+ Nova Despesa Variável</button>
+                        </header>
+                        <div class="tabela__scroll">
+                            <table class="tabela">
+                                <thead>
+                                    <tr>
+                                        <th>Descrição</th>
+                                        <th>Categoria</th>
+                                        <th>Data</th>
+                                        <th class="alinha-direita">Valor</th>
+                                        <th class="alinha-direita">Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tabela-variaveis"></tbody>
+                            </table>
+                        </div>
+                    </article>
+                </div>
+
+                <!-- Resumo consolidado das saídas -->
+                <article class="card resumo-saidas">
+                    <h3 class="tabela__titulo">Resumo das saídas <small>projeção do mês atual</small></h3>
+                    <div class="resumo-saidas__grade">
+                        <div class="resumo-saidas__item resumo-saidas__item--fixas">
+                            <span>Despesas fixas</span>
+                            <strong id="resumo-fixas">R$ 0,00</strong>
+                            <small id="resumo-fixas-detalhe">—</small>
+                        </div>
+                        <div class="resumo-saidas__item resumo-saidas__item--equipe">
+                            <span>Colaboradores</span>
+                            <strong id="resumo-colaboradores">R$ 0,00</strong>
+                            <small id="resumo-colaboradores-detalhe">—</small>
+                        </div>
+                        <div class="resumo-saidas__item resumo-saidas__item--variaveis">
+                            <span>Despesas variáveis</span>
+                            <strong id="resumo-variaveis">R$ 0,00</strong>
+                            <small id="resumo-variaveis-detalhe">—</small>
+                        </div>
+                        <div class="resumo-saidas__item resumo-saidas__item--total">
+                            <span>Total de saídas do mês</span>
+                            <strong id="resumo-total">R$ 0,00</strong>
+                            <small>fixas + colaboradores + variáveis</small>
+                        </div>
+                    </div>
+                </article>
+            </section>
+
+            <!-- ===== SEÇÃO: CONFIGURAÇÕES ===== -->
+            <section class="secao" id="secao-configuracoes" aria-label="Configurações">
+                <div class="config-grade">
+
+                    <!-- Gestão de usuários — visível apenas para o admin -->
+                    <article class="card" id="card-usuarios" hidden>
+                        <h3 class="tabela__titulo">Usuários do sistema</h3>
+                        <p class="card__descricao margem-baixo" id="usuarios-ajuda"></p>
+
+                        <form class="config-form-linha" id="form-usuario">
+                            <input class="campo__entrada" type="email" id="usuario-email" required
+                                   placeholder="email@colaborador.com" autocomplete="off">
+                            <button class="botao botao--primario" type="submit">Adicionar</button>
+                        </form>
+
+                        <ul class="lista-usuarios" id="lista-usuarios"></ul>
+                    </article>
+
+                    <!-- Minha conta -->
+                    <article class="card">
+                        <h3 class="tabela__titulo">Minha conta</h3>
+                        <p class="card__descricao margem-baixo">Altere a sua senha de acesso ao sistema.</p>
+
+                        <form class="configuracoes__form" id="form-senha">
+                            <div class="campo">
+                                <label class="campo__rotulo" for="senha-atual">Senha atual</label>
+                                <input class="campo__entrada" type="password" id="senha-atual" required autocomplete="current-password">
+                            </div>
+                            <div class="campo">
+                                <label class="campo__rotulo" for="senha-nova">Nova senha (mín. 6 caracteres)</label>
+                                <input class="campo__entrada" type="password" id="senha-nova" required minlength="6" autocomplete="new-password">
+                            </div>
+                            <div class="campo">
+                                <label class="campo__rotulo" for="senha-confirma">Confirmar nova senha</label>
+                                <input class="campo__entrada" type="password" id="senha-confirma" required autocomplete="new-password">
+                            </div>
+                            <button class="botao botao--primario" type="submit">Alterar senha</button>
+                        </form>
+                    </article>
+
+                    <!-- Preferências gerais -->
+                    <article class="card configuracoes">
+                        <h3 class="tabela__titulo">Preferências</h3>
+                        <form class="configuracoes__form" id="form-configuracoes">
+                            <div class="campo">
+                                <label class="campo__rotulo" for="conf-nome">Nome da empresa</label>
+                                <input class="campo__entrada" type="text" id="conf-nome" value="LUSH. Global Marketing">
+                            </div>
+                            <div class="campo">
+                                <label class="campo__rotulo" for="conf-email">E-mail de contato</label>
+                                <input class="campo__entrada" type="email" id="conf-email" value="financeiro@lush.com">
+                            </div>
+                            <div class="campo">
+                                <label class="campo__rotulo" for="conf-moeda">Moeda padrão</label>
+                                <select class="campo__entrada" id="conf-moeda">
+                                    <option selected>Real (R$)</option>
+                                    <option>Dólar (US$)</option>
+                                    <option>Euro (€)</option>
+                                </select>
+                            </div>
+                            <button class="botao botao--primario" type="submit">Salvar alterações</button>
+                        </form>
+                    </article>
+
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- ============================================================
+         MODAIS (fichas e cadastros)
+    ============================================================ -->
+
+    <!-- Ficha de cliente recorrente -->
+    <dialog class="modal" id="modal-cliente">
+        <form class="modal__form" id="form-cliente">
+            <header class="modal__cabecalho">
+                <h3 id="titulo-modal-cliente">Ficha do Cliente</h3>
+                <button class="modal__fechar" type="button" data-fechar aria-label="Fechar">✕</button>
+            </header>
+
+            <input type="hidden" id="cliente-id">
+
+            <div class="modal__grade">
+                <div class="campo campo--inteiro">
+                    <label class="campo__rotulo" for="cliente-empresa">Nome da empresa *</label>
+                    <input class="campo__entrada" type="text" id="cliente-empresa" required placeholder="Ex.: Clínica Vitalle">
+                </div>
+                <div class="campo">
+                    <label class="campo__rotulo" for="cliente-cnpj">CNPJ *</label>
+                    <input class="campo__entrada" type="text" id="cliente-cnpj" required placeholder="00.000.000/0000-00" inputmode="numeric">
+                </div>
+                <div class="campo">
+                    <label class="campo__rotulo" for="cliente-inicio">Início do contrato</label>
+                    <input class="campo__entrada" type="date" id="cliente-inicio">
+                </div>
+                <div class="campo">
+                    <label class="campo__rotulo" for="cliente-gestor">Gestor do contrato</label>
+                    <input class="campo__entrada" type="text" id="cliente-gestor" placeholder="Nome do gestor">
+                </div>
+                <div class="campo">
+                    <label class="campo__rotulo" for="cliente-gestor-contato">Contato do gestor</label>
+                    <input class="campo__entrada" type="text" id="cliente-gestor-contato" placeholder="Telefone ou e-mail">
+                </div>
+                <div class="campo">
+                    <label class="campo__rotulo" for="cliente-financeiro">Responsável financeiro</label>
+                    <input class="campo__entrada" type="text" id="cliente-financeiro" placeholder="Nome do financeiro">
+                </div>
+                <div class="campo">
+                    <label class="campo__rotulo" for="cliente-financeiro-contato">Contato do financeiro</label>
+                    <input class="campo__entrada" type="text" id="cliente-financeiro-contato" placeholder="Telefone ou e-mail">
+                </div>
+                <div class="campo">
+                    <label class="campo__rotulo" for="cliente-responsavel">Colaborador responsável</label>
+                    <select class="campo__entrada" id="cliente-responsavel"></select>
+                </div>
+                <div class="campo">
+                    <label class="campo__rotulo" for="cliente-recorrencia">Recorrência de pagamento</label>
+                    <select class="campo__entrada" id="cliente-recorrencia">
+                        <option>Mensal</option>
+                        <option>Trimestral</option>
+                        <option>Semestral</option>
+                        <option>Anual</option>
+                    </select>
+                </div>
+                <div class="campo">
+                    <label class="campo__rotulo" for="cliente-dia">Dia da cobrança (1–28)</label>
+                    <input class="campo__entrada" type="number" id="cliente-dia" min="1" max="28" value="5" required>
+                </div>
+                <div class="campo">
+                    <label class="campo__rotulo" for="cliente-valor">Valor da recorrência (R$) *</label>
+                    <input class="campo__entrada" type="number" id="cliente-valor" min="0" step="0.01" required placeholder="0,00">
+                </div>
+                <div class="campo campo--inteiro">
+                    <label class="campo__rotulo" for="cliente-drive">Pasta de contratos no Google Drive</label>
+                    <input class="campo__entrada" type="url" id="cliente-drive" placeholder="https://drive.google.com/drive/folders/...">
+                </div>
+                <div class="campo campo--check campo--inteiro">
+                    <input type="checkbox" id="cliente-nf" checked>
+                    <label class="campo__rotulo" for="cliente-nf">Este cliente exige emissão de nota fiscal</label>
+                </div>
+            </div>
+
+            <footer class="modal__rodape">
+                <button class="botao botao--fantasma" type="button" data-fechar>Cancelar</button>
+                <button class="botao botao--primario" type="submit">Salvar cliente</button>
+            </footer>
+        </form>
+    </dialog>
+
+    <!-- Ficha de projeto único / freela -->
+    <dialog class="modal" id="modal-projeto">
+        <form class="modal__form" id="form-projeto">
+            <header class="modal__cabecalho">
+                <h3 id="titulo-modal-projeto">Ficha do Projeto Único</h3>
+                <button class="modal__fechar" type="button" data-fechar aria-label="Fechar">✕</button>
+            </header>
+
+            <input type="hidden" id="projeto-id">
+
+            <div class="modal__grade">
+                <div class="campo campo--inteiro">
+                    <label class="campo__rotulo" for="projeto-empresa">Nome da empresa / cliente *</label>
+                    <input class="campo__entrada" type="text" id="projeto-empresa" required>
+                </div>
+                <div class="campo">
+                    <label class="campo__rotulo" for="projeto-cnpj">CNPJ / CPF</label>
+                    <input class="campo__entrada" type="text" id="projeto-cnpj" placeholder="00.000.000/0000-00" inputmode="numeric">
+                </div>
+                <div class="campo">
+                    <label class="campo__rotulo" for="projeto-servico">Serviço contratado *</label>
+                    <input class="campo__entrada" type="text" id="projeto-servico" required placeholder="Ex.: Identidade visual">
+                </div>
+                <div class="campo">
+                    <label class="campo__rotulo" for="projeto-gestor">Gestor do contrato</label>
+                    <input class="campo__entrada" type="text" id="projeto-gestor">
+                </div>
+                <div class="campo">
+                    <label class="campo__rotulo" for="projeto-gestor-contato">Contato do gestor</label>
+                    <input class="campo__entrada" type="text" id="projeto-gestor-contato">
+                </div>
+                <div class="campo">
+                    <label class="campo__rotulo" for="projeto-financeiro">Responsável financeiro</label>
+                    <input class="campo__entrada" type="text" id="projeto-financeiro">
+                </div>
+                <div class="campo">
+                    <label class="campo__rotulo" for="projeto-financeiro-contato">Contato do financeiro</label>
+                    <input class="campo__entrada" type="text" id="projeto-financeiro-contato">
+                </div>
+                <div class="campo">
+                    <label class="campo__rotulo" for="projeto-entrega">Data de entrega</label>
+                    <input class="campo__entrada" type="date" id="projeto-entrega">
+                </div>
+                <div class="campo campo--check">
+                    <input type="checkbox" id="projeto-nf">
+                    <label class="campo__rotulo" for="projeto-nf">Exige emissão de NF</label>
+                </div>
+                <div class="campo">
+                    <label class="campo__rotulo" for="projeto-custo">Meus custos totais (R$) *</label>
+                    <input class="campo__entrada" type="number" id="projeto-custo" min="0" step="0.01" required placeholder="0,00">
+                </div>
+                <div class="campo">
+                    <label class="campo__rotulo" for="projeto-valor">Valor orçado / estipulado (R$) *</label>
+                    <input class="campo__entrada" type="number" id="projeto-valor" min="0" step="0.01" required placeholder="0,00">
+                </div>
+
+                <div class="calculo" id="projeto-calculo">
+                    <div>
+                        <span>Margem projetada</span>
+                        <strong id="calculo-percentual">—</strong>
+                    </div>
+                    <div>
+                        <span>Preço mínimo (margem 20%)</span>
+                        <strong id="calculo-minimo">—</strong>
+                    </div>
+                    <p id="calculo-status">Informe os custos e o valor orçado para calcular.</p>
+                </div>
+            </div>
+
+            <footer class="modal__rodape">
+                <button class="botao botao--fantasma" type="button" data-fechar>Cancelar</button>
+                <button class="botao botao--primario" type="submit">Salvar projeto</button>
+            </footer>
+        </form>
+    </dialog>
+
+    <!-- Registro de upsell -->
+    <dialog class="modal" id="modal-upsell">
+        <form class="modal__form" id="form-upsell">
+            <header class="modal__cabecalho">
+                <h3>Registrar Upsell</h3>
+                <button class="modal__fechar" type="button" data-fechar aria-label="Fechar">✕</button>
+            </header>
+
+            <div class="modal__grade">
+                <div class="campo campo--inteiro">
+                    <label class="campo__rotulo" for="upsell-cliente">Cliente de base *</label>
+                    <select class="campo__entrada" id="upsell-cliente" required></select>
+                </div>
+                <div class="campo campo--inteiro">
+                    <label class="campo__rotulo" for="upsell-descricao">Descrição da venda *</label>
+                    <input class="campo__entrada" type="text" id="upsell-descricao" required placeholder="Ex.: Campanha extra de fim de ano">
+                </div>
+                <div class="campo">
+                    <label class="campo__rotulo" for="upsell-data">Data</label>
+                    <input class="campo__entrada" type="date" id="upsell-data">
+                </div>
+                <div class="campo">
+                    <label class="campo__rotulo" for="upsell-valor">Valor (R$) *</label>
+                    <input class="campo__entrada" type="number" id="upsell-valor" min="0" step="0.01" required placeholder="0,00">
+                </div>
+            </div>
+
+            <footer class="modal__rodape">
+                <button class="botao botao--fantasma" type="button" data-fechar>Cancelar</button>
+                <button class="botao botao--primario" type="submit">Salvar upsell</button>
+            </footer>
+        </form>
+    </dialog>
+
+    <!-- Ficha de despesa fixa -->
+    <dialog class="modal" id="modal-fixa">
+        <form class="modal__form" id="form-fixa">
+            <header class="modal__cabecalho">
+                <h3 id="titulo-modal-fixa">Nova Despesa Fixa</h3>
+                <button class="modal__fechar" type="button" data-fechar aria-label="Fechar">✕</button>
+            </header>
+
+            <input type="hidden" id="fixa-id">
+
+            <div class="modal__grade">
+                <div class="campo campo--inteiro">
+                    <label class="campo__rotulo" for="fixa-descricao">Descrição *</label>
+                    <input class="campo__entrada" type="text" id="fixa-descricao" required placeholder="Ex.: Aluguel do estúdio">
+                </div>
+                <div class="campo">
+                    <label class="campo__rotulo" for="fixa-categoria">Categoria</label>
+                    <select class="campo__entrada" id="fixa-categoria">
+                        <option>Estrutura</option>
+                        <option>Ferramentas &amp; Software</option>
+                        <option>Tráfego Pago</option>
+                        <option>Equipe &amp; Freelas</option>
+                        <option>Impostos &amp; Taxas</option>
+                        <option>Serviços</option>
+                        <option>Outros</option>
+                    </select>
+                </div>
+                <div class="campo">
+                    <label class="campo__rotulo" for="fixa-dia">Dia do vencimento (1–28)</label>
+                    <input class="campo__entrada" type="number" id="fixa-dia" min="1" max="28" value="5" required>
+                </div>
+                <div class="campo campo--inteiro">
+                    <label class="campo__rotulo" for="fixa-valor">Valor mensal (R$) *</label>
+                    <input class="campo__entrada" type="number" id="fixa-valor" min="0" step="0.01" required placeholder="0,00">
+                </div>
+            </div>
+
+            <footer class="modal__rodape">
+                <button class="botao botao--fantasma" type="button" data-fechar>Cancelar</button>
+                <button class="botao botao--primario" type="submit">Salvar despesa</button>
+            </footer>
+        </form>
+    </dialog>
+
+    <!-- Ficha de colaborador -->
+    <dialog class="modal" id="modal-colaborador">
+        <form class="modal__form" id="form-colaborador">
+            <header class="modal__cabecalho">
+                <h3 id="titulo-modal-colaborador">Ficha do Colaborador</h3>
+                <button class="modal__fechar" type="button" data-fechar aria-label="Fechar">✕</button>
+            </header>
+
+            <input type="hidden" id="colaborador-id">
+
+            <div class="modal__grade">
+                <div class="campo campo--inteiro">
+                    <label class="campo__rotulo" for="colaborador-nome">Nome completo *</label>
+                    <input class="campo__entrada" type="text" id="colaborador-nome" required placeholder="Ex.: Marina Costa">
+                </div>
+                <div class="campo">
+                    <label class="campo__rotulo" for="colaborador-funcao">Função</label>
+                    <input class="campo__entrada" type="text" id="colaborador-funcao" placeholder="Ex.: Social Media">
+                </div>
+                <div class="campo">
+                    <label class="campo__rotulo" for="colaborador-contato">Contato *</label>
+                    <input class="campo__entrada" type="text" id="colaborador-contato" required placeholder="Telefone ou e-mail">
+                </div>
+                <div class="campo">
+                    <label class="campo__rotulo" for="colaborador-cpf">CPF *</label>
+                    <input class="campo__entrada" type="text" id="colaborador-cpf" required placeholder="000.000.000-00" inputmode="numeric">
+                </div>
+                <div class="campo">
+                    <label class="campo__rotulo" for="colaborador-pix">Chave PIX *</label>
+                    <input class="campo__entrada" type="text" id="colaborador-pix" required placeholder="CPF, e-mail, telefone ou aleatória">
+                </div>
+                <div class="campo">
+                    <label class="campo__rotulo" for="colaborador-dia">Dia do pagamento (1–28)</label>
+                    <input class="campo__entrada" type="number" id="colaborador-dia" min="1" max="28" value="5" required>
+                </div>
+                <div class="campo">
+                    <label class="campo__rotulo" for="colaborador-valor">Valor mensal (R$) *</label>
+                    <input class="campo__entrada" type="number" id="colaborador-valor" min="0" step="0.01" required placeholder="0,00">
+                </div>
+            </div>
+
+            <footer class="modal__rodape">
+                <button class="botao botao--fantasma" type="button" data-fechar>Cancelar</button>
+                <button class="botao botao--primario" type="submit">Salvar colaborador</button>
+            </footer>
+        </form>
+    </dialog>
+
+    <!-- Registro de despesa variável -->
+    <dialog class="modal" id="modal-variavel">
+        <form class="modal__form" id="form-variavel">
+            <header class="modal__cabecalho">
+                <h3 id="titulo-modal-variavel">Nova Despesa Variável</h3>
+                <button class="modal__fechar" type="button" data-fechar aria-label="Fechar">✕</button>
+            </header>
+
+            <input type="hidden" id="variavel-id">
+
+            <div class="modal__grade">
+                <div class="campo campo--inteiro">
+                    <label class="campo__rotulo" for="variavel-descricao">Descrição *</label>
+                    <input class="campo__entrada" type="text" id="variavel-descricao" required placeholder="Ex.: Meta Ads — campanha de julho">
+                </div>
+                <div class="campo">
+                    <label class="campo__rotulo" for="variavel-categoria">Categoria</label>
+                    <select class="campo__entrada" id="variavel-categoria">
+                        <option>Tráfego Pago</option>
+                        <option>Equipe &amp; Freelas</option>
+                        <option>Ferramentas &amp; Software</option>
+                        <option>Estrutura</option>
+                        <option>Impostos &amp; Taxas</option>
+                        <option>Serviços</option>
+                        <option>Outros</option>
+                    </select>
+                </div>
+                <div class="campo">
+                    <label class="campo__rotulo" for="variavel-data">Data</label>
+                    <input class="campo__entrada" type="date" id="variavel-data">
+                </div>
+                <div class="campo campo--inteiro">
+                    <label class="campo__rotulo" for="variavel-valor">Valor (R$) *</label>
+                    <input class="campo__entrada" type="number" id="variavel-valor" min="0" step="0.01" required placeholder="0,00">
+                </div>
+            </div>
+
+            <footer class="modal__rodape">
+                <button class="botao botao--fantasma" type="button" data-fechar>Cancelar</button>
+                <button class="botao botao--primario" type="submit">Salvar despesa</button>
+            </footer>
+        </form>
+    </dialog>
+
+    <!-- Canal de orientações por cliente -->
+    <dialog class="modal" id="modal-chat">
+        <form class="modal__form" id="form-chat">
+            <header class="modal__cabecalho">
+                <h3 id="titulo-modal-chat">Orientações</h3>
+                <button class="modal__fechar" type="button" data-fechar aria-label="Fechar">✕</button>
+            </header>
+
+            <input type="hidden" id="chat-cliente-id">
+            <p class="chat__responsavel" id="chat-responsavel"></p>
+
+            <div class="chat__mensagens" id="chat-mensagens"></div>
+
+            <div class="campo">
+                <label class="campo__rotulo" for="chat-texto">Nova orientação</label>
+                <textarea class="campo__entrada chat__campo" id="chat-texto" rows="3" required
+                          placeholder="Ex.: A partir deste mês o cliente quer os relatórios toda sexta-feira."></textarea>
+            </div>
+
+            <footer class="modal__rodape">
+                <button class="botao botao--fantasma" type="button" data-fechar>Fechar</button>
+                <button class="botao botao--primario" type="submit">Enviar orientação</button>
+            </footer>
+        </form>
+    </dialog>
+
+</body>
+</html>
