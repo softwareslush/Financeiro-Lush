@@ -278,6 +278,7 @@ el('botao-sair').addEventListener('click', async () => {
     sistema.hidden   = true;
     telaLogin.hidden = false;
     el('login-senha').value = '';
+    window.scrollTo(0, 0);
 });
 
 // Entra a partir de uma sessão válida do Supabase
@@ -312,6 +313,12 @@ function revelarSistema() {
     aplicarUsuarioNaInterface();
     telaLogin.hidden = true;
     sistema.hidden   = false;
+
+    // Volta ao topo e garante que o conteúdo comece do começo,
+    // deixando claro que o login foi concluído.
+    window.scrollTo(0, 0);
+    const conteudo = document.querySelector('.conteudo');
+    if (conteudo) conteudo.scrollTop = 0;
 
     if ('Notification' in window && Notification.permission === 'default') {
         Notification.requestPermission();
