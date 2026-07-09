@@ -435,7 +435,17 @@
                     <!-- Minha conta -->
                     <article class="card">
                         <h3 class="tabela__titulo">Minha conta</h3>
-                        <p class="card__descricao margem-baixo">Altere a sua senha de acesso ao sistema.</p>
+                        <p class="card__descricao margem-baixo">Sua foto de perfil e a senha de acesso ao sistema.</p>
+
+                        <div class="foto-perfil">
+                            <span class="avatar avatar--grande" id="preview-foto">LU</span>
+                            <div class="foto-perfil__acoes">
+                                <label class="botao botao--fantasma foto-perfil__label" for="input-foto">Escolher foto</label>
+                                <button class="botao botao--fantasma" type="button" id="btn-remover-foto">Remover</button>
+                                <input type="file" id="input-foto" accept="image/*" hidden>
+                                <small class="foto-perfil__dica">Uma imagem quadrada fica melhor. A foto fica salva na sua conta.</small>
+                            </div>
+                        </div>
 
                         <form class="configuracoes__form" id="form-senha">
                             <div class="campo">
