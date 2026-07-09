@@ -1529,7 +1529,7 @@ function configurarModoNaTela() {
         setTimeout(() => { banner.hidden = true; document.body.style.paddingTop = '0'; }, 4000);
 
         el('login-dica').innerHTML =
-            `Use o e-mail e a senha cadastrados no Supabase.<br>Administrador: <strong>${esc(ADMIN_EMAIL)}</strong>.`;
+            'Use o e-mail e a senha cadastrados no Supabase.';
     } else {
         banner.hidden = false;
         banner.innerHTML = '⚠ Modo local (demonstração) — os dados ficam só neste navegador. Preencha o <strong>config.js</strong> para ativar o Supabase.';
