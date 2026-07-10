@@ -90,49 +90,21 @@ const el = (id) => document.getElementById(id);
 
 
 /* ============================================================
-   3. ESTADO INICIAL (dados de demonstração)
+   3. ESTADO INICIAL (sistema começa VAZIO)
 ============================================================ */
 
 function estadoInicial() {
-    const agora     = new Date();
-    const inicioMes = `${agora.getFullYear()}-${String(agora.getMonth() + 1).padStart(2, '0')}-01`;
-    const mesAtual  = inicioMes.slice(0, 7);
-
-    const c1 = { id: uid(), empresa: 'Clínica Vitalle', cnpj: '12.345.678/0001-90', gestor: 'Dra. Paula Freitas', gestorContato: '(11) 98888-1234', financeiro: 'Carlos Souza', financeiroContato: 'financeiro@vitalle.com', emiteNF: true,  recorrencia: 'Mensal', diaCobranca: 8,  valor: 6500, inicio: inicioMes };
-    const c2 = { id: uid(), empresa: 'Grupo Andrade',   cnpj: '45.678.912/0001-33', gestor: 'Marcos Andrade',    gestorContato: '(11) 97777-4567', financeiro: 'Ana Lima',    financeiroContato: 'contas@grupoandrade.com', emiteNF: true,  recorrencia: 'Mensal', diaCobranca: 10, valor: 4200, inicio: inicioMes };
-    const c3 = { id: uid(), empresa: 'TechNova',        cnpj: '78.912.345/0001-56', gestor: 'Júlia Prado',       gestorContato: 'julia@technova.com', financeiro: 'Júlia Prado', financeiroContato: '(11) 96666-7890', emiteNF: true,  recorrencia: 'Mensal', diaCobranca: 20, valor: 3900, inicio: inicioMes };
-    const c4 = { id: uid(), empresa: 'Espaço Zen',      cnpj: '32.165.498/0001-77', gestor: 'Renato Dias',       gestorContato: '(11) 95555-2468', financeiro: 'Renato Dias', financeiroContato: 'renato@espacozen.com', emiteNF: false, recorrencia: 'Mensal', diaCobranca: 5,  valor: 3850, inicio: inicioMes };
-
     return {
-        clientes: [c1, c2, c3, c4],
-        projetos: [
-            { id: uid(), empresa: 'Bella Moda',  cnpj: '98.765.432/0001-10', gestor: 'Renata Lima', gestorContato: '(11) 94444-2211', financeiro: 'Renata Lima', financeiroContato: 'renata@bellamoda.com', emiteNF: true,  servico: 'Identidade visual completa', entrega: `${mesAtual}-28`, custo: 6200, valor: 8900 },
-            { id: uid(), empresa: 'Café Aurora', cnpj: '11.222.333/0001-44', gestor: 'Pedro Neves', gestorContato: 'pedro@cafeaurora.com', financeiro: 'Pedro Neves', financeiroContato: '(11) 93333-1357', emiteNF: false, servico: 'Vídeo institucional',        entrega: `${mesAtual}-15`, custo: 4000, valor: 4500 }
-        ],
-        upsells: [
-            { id: uid(), clienteId: c1.id, cliente: c1.empresa, descricao: 'Campanha extra — Dia dos Pais', data: `${mesAtual}-03`, valor: 1500 },
-            { id: uid(), clienteId: c3.id, cliente: c3.empresa, descricao: 'Pacote de criativos adicionais', data: `${mesAtual}-05`, valor: 850 }
-        ],
-        fixas: [
-            { id: uid(), descricao: 'Aluguel do estúdio',           categoria: 'Estrutura',              diaVencimento: 5,  valor: 2100 },
-            { id: uid(), descricao: 'Assinatura Adobe + Canva Pro', categoria: 'Ferramentas & Software', diaVencimento: 10, valor: 640 },
-            { id: uid(), descricao: 'Internet + telefonia',         categoria: 'Estrutura',              diaVencimento: 15, valor: 280 },
-            { id: uid(), descricao: 'Contabilidade',                categoria: 'Serviços',               diaVencimento: 20, valor: 450 }
-        ],
-        colaboradores: [
-            { id: uid(), nome: 'Marina Costa', funcao: 'Social Media',       contato: '(11) 98888-7766', cpf: '123.456.789-00', chavePix: 'marina.costa@pix.com', diaPagamento: 5,  valor: 2800 },
-            { id: uid(), nome: 'Diego Ramos',  funcao: 'Designer',           contato: '(11) 97777-5544', cpf: '987.654.321-00', chavePix: '(11) 97777-5544',      diaPagamento: 5,  valor: 3200 },
-            { id: uid(), nome: 'Ana Beatriz',  funcao: 'Gestora de Tráfego', contato: 'ana@lush.com',    cpf: '456.789.123-00', chavePix: '456.789.123-00',       diaPagamento: 10, valor: 3500 }
-        ],
-        variaveis: [
-            { id: uid(), descricao: 'Meta Ads — campanhas de clientes', categoria: 'Tráfego Pago',     data: `${mesAtual}-03`, valor: 5200 },
-            { id: uid(), descricao: 'Freelancer — motion design',       categoria: 'Equipe & Freelas', data: `${mesAtual}-01`, valor: 1800 },
-            { id: uid(), descricao: 'Café e suprimentos do estúdio',    categoria: 'Outros',           data: `${mesAtual}-06`, valor: 180.50 }
-        ],
-        concluidas: {},
-        mensagens:  {},
+        clientes:      [],
+        projetos:      [],
+        upsells:       [],
+        fixas:         [],
+        colaboradores: [],
+        variaveis:     [],
+        concluidas:    {},
+        mensagens:     {},
         usuarios: [
-            { id: uid(), nome: 'Admin LUSH', email: ADMIN_EMAIL, senha: SENHA_PADRAO, papel: 'admin' }
+            { id: uid(), nome: 'Admin', email: ADMIN_EMAIL, senha: SENHA_PADRAO, papel: 'admin' }
         ]
     };
 }
@@ -161,21 +133,26 @@ function normalizarEstado() {
    4. CAMADA DE DADOS (carregar / salvar) — depende do modo
 ============================================================ */
 
-let estado       = null;   // dados em memória
-let usuarioAtual = null;    // { email, nome, papel }
-let salvarTimer  = null;
+let estado        = null;   // dados em memória
+let usuarioAtual  = null;   // { email, nome, papel }
+let salvandoAgora = false;  // já existe uma gravação em andamento?
+let salvarDeNovo  = false;  // pediram para salvar durante a gravação?
+let jaAvisouErro  = false;  // evita repetir o alerta de erro
 
 async function carregarEstado() {
     if (MODO === 'supabase') {
         const { data, error } = await sb
             .from('workspace').select('dados').eq('id', WORKSPACE_ID).maybeSingle();
 
-        if (error) console.error('Erro ao ler do Supabase:', error);
-
-        if (data && data.dados) {
+        if (error) {
+            // Em caso de erro de leitura NÃO sobrescrevemos o banco:
+            // usamos um estado vazio só em memória para não apagar nada.
+            console.error('Erro ao ler do Supabase:', error);
+            estado = estado || estadoInicial();
+        } else if (data && data.dados) {
             estado = data.dados;
         } else {
-            // Primeira vez: cria a linha com os dados de demonstração
+            // Primeiro acesso: cria a linha (vazia) no banco.
             estado = estadoInicial();
             const r = await sb.from('workspace').upsert({ id: WORKSPACE_ID, dados: estado });
             if (r.error) console.error('Erro ao criar workspace:', r.error);
@@ -190,32 +167,59 @@ async function carregarEstado() {
     normalizarEstado();
 }
 
-// Salva: re-renderiza o que depende dos dados (imediato) e
-// persiste no armazenamento (com pequeno atraso no Supabase)
+// Salva: grava PRIMEIRO (para que um erro de renderização não
+// impeça a gravação) e depois atualiza a tela.
 function salvar() {
+    persistir();
     renderizarCarteira();
     atualizarResumoSaidas();
     atualizarResumoGeral();
     if (graficoFluxo)  atualizarGraficoFluxo();
     if (graficoBarras) atualizarGraficoBarras();
     if (graficoRosca)  atualizarGraficoRosca();
-    persistir();
 }
 
 function persistir() {
     if (MODO === 'supabase') {
-        clearTimeout(salvarTimer);
-        salvarTimer = setTimeout(async () => {
-            const { error } = await sb.from('workspace').upsert({
-                id: WORKSPACE_ID,
-                dados: estado,
-                atualizado_em: new Date().toISOString()
-            });
-            if (error) console.error('Erro ao salvar no Supabase:', error);
-        }, 400);
+        gravarNoSupabase();
     } else {
         localStorage.setItem(CHAVE_ARMAZENAMENTO, JSON.stringify(estado));
     }
+}
+
+// Grava IMEDIATAMENTE (sem atraso). Se chamarem de novo durante a
+// gravação, agenda uma segunda passada — assim nunca perdemos a
+// última alteração, mesmo com cliques rápidos seguidos de refresh.
+async function gravarNoSupabase() {
+    if (salvandoAgora) { salvarDeNovo = true; return; }
+    salvandoAgora = true;
+    try {
+        const { error } = await sb.from('workspace').upsert({
+            id: WORKSPACE_ID,
+            dados: estado,
+            atualizado_em: new Date().toISOString()
+        });
+        if (error) { console.error('Erro ao salvar no Supabase:', error); avisarErroSalvar(error); }
+    } catch (e) {
+        console.error('Falha ao salvar no Supabase:', e);
+        avisarErroSalvar(e);
+    } finally {
+        salvandoAgora = false;
+        if (salvarDeNovo) { salvarDeNovo = false; gravarNoSupabase(); }
+    }
+}
+
+// Avisa uma única vez se a gravação estiver falhando (ex.: permissões
+// de UPDATE ausentes no banco). Assim o problema não passa despercebido.
+function avisarErroSalvar(err) {
+    if (jaAvisouErro) return;
+    jaAvisouErro = true;
+    alert(
+        'Não foi possível salvar no banco (Supabase), então as alterações podem não ' +
+        'permanecer após atualizar a página.\n\nConfira se você rodou TODO o arquivo ' +
+        'supabase.sql (incluindo as permissões de UPDATE) no SQL Editor.\n\nDetalhe técnico: ' +
+        (err && err.message ? err.message : err)
+    );
 }
 
 
@@ -377,6 +381,8 @@ function aplicarUsuarioNaInterface() {
 
     const cardUsuarios = el('card-usuarios');
     cardUsuarios.hidden = usuarioAtual.papel !== 'admin';
+    const cardDados = el('card-dados');
+    if (cardDados) cardDados.hidden = usuarioAtual.papel !== 'admin';
     if (!cardUsuarios.hidden) {
         el('usuarios-ajuda').innerHTML = MODO === 'supabase'
             ? 'Defina o papel de cada pessoa (admin ou colaborador). <strong>O login de verdade é criado no painel do Supabase</strong> (Authentication → Users). Adicione aqui o mesmo e-mail para controlar as permissões.'
@@ -523,6 +529,26 @@ el('btn-remover-foto').addEventListener('click', () => {
     delete usuarioAtual.foto;
     persistir();
     aplicarUsuarioNaInterface();
+});
+
+/* ---- Apagar todos os dados (admin) ---- */
+el('btn-limpar-dados').addEventListener('click', () => {
+    if (!usuarioAtual || usuarioAtual.papel !== 'admin') return;
+    if (!confirm('Isto vai APAGAR todos os clientes, projetos, upsells, despesas, colaboradores e orientações. Os logins são mantidos.\n\nDeseja continuar?')) return;
+    if (!confirm('Tem certeza? Esta ação NÃO pode ser desfeita.')) return;
+
+    estado.clientes      = [];
+    estado.projetos      = [];
+    estado.upsells       = [];
+    estado.fixas         = [];
+    estado.colaboradores = [];
+    estado.variaveis     = [];
+    estado.concluidas    = {};
+    estado.mensagens     = {};
+
+    persistir();
+    renderTudo();
+    alert('Todos os dados foram apagados. Agora é só cadastrar os seus.');
 });
 
 
