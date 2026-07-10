@@ -1,892 +1,730 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="LUSH. Finance — Sistema de Gestão e Análise Financeira">
-    <title>LUSH. Finance — Gestão Financeira</title>
-
-    <!-- Tipografia da marca: Space Grotesk (Google Fonts) -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
-
-    <!-- Estilos do sistema -->
-    <link rel="stylesheet" href="style.css?v=2">
-
-    <!-- Supabase (banco de dados + login) via CDN -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-
-    <!-- Chart.js via CDN -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js" defer></script>
-
-    <!-- Suas chaves do Supabase (edite o config.js) + script do sistema -->
-    <script src="config.js" defer></script>
-    <script src="script.js?v=2" defer></script>
-</head>
-<body>
-
-    <!-- Aviso de modo de funcionamento (local x nuvem) — controlado pelo script.js -->
-    <div class="modo-banner" id="modo-banner" hidden></div>
-
-    <!-- ============================================================
-         TELA DE LOGIN
-    ============================================================ -->
-    <section class="login" id="tela-login" aria-label="Tela de login">
-        <form class="login__card" id="form-login" novalidate>
-            <img class="login__logo" src="assets/lush-logo-branco.svg" alt="LUSH. Global Marketing">
-
-            <h1 class="login__titulo">Gestão Financeira</h1>
-            <p class="login__subtitulo">Acesse o painel para acompanhar receitas, despesas e resultados.</p>
-
-            <div class="campo">
-                <label class="campo__rotulo" for="login-email">E-mail</label>
-                <input class="campo__entrada" type="email" id="login-email"
-                       name="email" placeholder="voce@lush.com" autocomplete="email" required>
-            </div>
-
-            <div class="campo">
-                <label class="campo__rotulo" for="login-senha">Senha</label>
-                <input class="campo__entrada" type="password" id="login-senha"
-                       name="senha" placeholder="••••••••" autocomplete="current-password" required>
-            </div>
-
-            <p class="login__erro" id="login-erro" hidden>E-mail ou senha incorretos.</p>
-
-            <button class="botao botao--primario login__entrar" type="submit">Entrar</button>
-
-            <p class="login__dica" id="login-dica"></p>
-        </form>
-    </section>
-
-    <!-- ============================================================
-         SISTEMA (LAYOUT BASE)
-    ============================================================ -->
-    <div class="sistema" id="sistema" hidden>
-
-        <!-- ---------- MENU LATERAL (SIDEBAR) ---------- -->
-        <aside class="sidebar" id="sidebar" aria-label="Menu principal">
-            <img class="sidebar__logo" src="assets/lush-logo-branco.svg" alt="LUSH. Global Marketing">
-
-            <nav class="sidebar__nav">
-                <button class="sidebar__item is-ativo" type="button" data-secao="visao-geral">
-                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
-                    Visão Geral
-                </button>
-                <button class="sidebar__item" type="button" data-secao="receitas">
-                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 14l5-5 5 5H7z"/><path d="M12 3a9 9 0 100 18 9 9 0 000-18zm0 16a7 7 0 110-14 7 7 0 010 14z"/></svg>
-                    Receitas
-                </button>
-                <button class="sidebar__item" type="button" data-secao="carteira">
-                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 11c1.66 0 3-1.34 3-3S17.66 5 16 5s-3 1.34-3 3 1.34 3 3 3zm-8 0c1.66 0 3-1.34 3-3S9.66 5 8 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5C15 14.17 10.33 13 8 13zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
-                    Carteira de Clientes
-                </button>
-                <button class="sidebar__item" type="button" data-secao="despesas">
-                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10l5 5 5-5H7z"/><path d="M12 3a9 9 0 100 18 9 9 0 000-18zm0 16a7 7 0 110-14 7 7 0 010 14z"/></svg>
-                    Despesas
-                </button>
-                <button class="sidebar__item" type="button" data-secao="configuracoes">
-                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19.4 13a7.6 7.6 0 000-2l2.1-1.6a.5.5 0 00.1-.7l-2-3.4a.5.5 0 00-.6-.2l-2.5 1a7.7 7.7 0 00-1.7-1L14.4 2.4a.5.5 0 00-.5-.4h-4a.5.5 0 00-.5.4l-.4 2.7a7.7 7.7 0 00-1.7 1l-2.5-1a.5.5 0 00-.6.2l-2 3.4a.5.5 0 00.1.7L4.6 11a7.6 7.6 0 000 2l-2.1 1.6a.5.5 0 00-.1.7l2 3.4c.1.2.4.3.6.2l2.5-1a7.7 7.7 0 001.7 1l.4 2.7c0 .2.2.4.5.4h4c.2 0 .4-.2.5-.4l.4-2.7a7.7 7.7 0 001.7-1l2.5 1c.2.1.5 0 .6-.2l2-3.4a.5.5 0 00-.1-.7L19.4 13zM12 15.5a3.5 3.5 0 110-7 3.5 3.5 0 010 7z"/></svg>
-                    Configurações
-                </button>
-            </nav>
-
-            <footer class="sidebar__rodape">
-                <span class="avatar" aria-hidden="true" id="avatar-sidebar">LU</span>
-                <div class="sidebar__usuario">
-                    <strong id="usuario-nome">Equipe LUSH</strong>
-                    <small id="usuario-papel">Financeiro</small>
-                </div>
-                <button class="sidebar__sair" type="button" id="botao-sair" title="Sair do sistema" aria-label="Sair do sistema">
-                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 13v-2H7V8l-5 4 5 4v-3h9zm3-10H11a2 2 0 00-2 2v3h2V5h8v14h-8v-3H9v3a2 2 0 002 2h8a2 2 0 002-2V5a2 2 0 00-2-2z"/></svg>
-                </button>
-            </footer>
-        </aside>
-
-        <div class="sidebar-overlay" id="sidebar-overlay" hidden></div>
-
-        <!-- ---------- ÁREA PRINCIPAL ---------- -->
-        <main class="conteudo">
-
-            <header class="topbar">
-                <button class="topbar__menu" type="button" id="botao-menu" aria-label="Abrir menu">
-                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18v2H3V6zm0 5h18v2H3v-2zm0 5h18v2H3v-2z"/></svg>
-                </button>
-                <div class="topbar__titulos">
-                    <h2 id="titulo-secao">Visão Geral</h2>
-                    <p id="data-atual"></p>
-                </div>
-
-                <!-- Central de notificações (lembretes de cobrança) -->
-                <div class="notificacoes">
-                    <button class="topbar__sino" type="button" id="botao-notificacoes" aria-label="Notificações">
-                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.1-1.6-5.6-4.5-6.3V4a1.5 1.5 0 10-3 0v.7C7.6 5.4 6 7.9 6 11v5l-2 2v1h16v-1l-2-2z"/></svg>
-                        <span class="topbar__badge" id="badge-notificacoes" hidden>0</span>
-                    </button>
-                    <div class="notificacoes__painel" id="painel-notificacoes" hidden>
-                        <h4>Notificações</h4>
-                        <p class="notificacoes__aviso">Lembretes de envio de NF, recibo e cobrança — visíveis para o admin e todos os colaboradores.</p>
-                        <ul class="notificacoes__lista" id="lista-notificacoes"></ul>
-                    </div>
-                </div>
-
-                <span class="avatar" aria-hidden="true" id="avatar-topbar">LU</span>
-            </header>
-
-            <!-- ===== SEÇÃO: VISÃO GERAL ===== -->
-            <section class="secao is-ativa" id="secao-visao-geral" aria-label="Visão geral">
-                <div class="cards-resumo">
-                    <article class="card card-resumo">
-                        <p class="card-resumo__rotulo">Previsto do Mês</p>
-                        <strong class="card-resumo__valor" data-valor="saldo">—</strong>
-                        <span class="selo selo--neutro" data-variacao="saldo">—</span>
-                    </article>
-
-                    <article class="card card-resumo card-resumo--receita">
-                        <p class="card-resumo__rotulo">Recebido no Mês</p>
-                        <strong class="card-resumo__valor" data-valor="receitas">—</strong>
-                        <span class="selo selo--positivo" data-variacao="receitas">—</span>
-                    </article>
-
-                    <article class="card card-resumo card-resumo--despesa">
-                        <p class="card-resumo__rotulo">Despesas do Mês</p>
-                        <strong class="card-resumo__valor" data-valor="despesas">—</strong>
-                        <span class="selo selo--negativo" data-variacao="despesas">—</span>
-                    </article>
-
-                    <article class="card card-resumo card-resumo--resultado">
-                        <p class="card-resumo__rotulo">Resultado do Mês</p>
-                        <strong class="card-resumo__valor" data-valor="resultado">—</strong>
-                        <span class="selo selo--positivo" data-variacao="resultado">receitas − despesas</span>
-                    </article>
-                </div>
-
-                <div class="graficos">
-                    <article class="card grafico">
-                        <h3 class="grafico__titulo">Entradas vs. Saídas <small>últimos 6 meses</small></h3>
-                        <div class="grafico__area">
-                            <canvas id="grafico-barras" role="img" aria-label="Gráfico de barras comparando entradas e saídas mensais"></canvas>
-                        </div>
-                    </article>
-
-                    <article class="card grafico">
-                        <h3 class="grafico__titulo">Despesas por Categoria <small>mês atual</small></h3>
-                        <div class="grafico__area">
-                            <canvas id="grafico-rosca" role="img" aria-label="Gráfico de rosca com a distribuição das despesas por categoria"></canvas>
-                        </div>
-                    </article>
-                </div>
-            </section>
-
-            <!-- ===== SEÇÃO: RECEITAS ===== -->
-            <section class="secao" id="secao-receitas" aria-label="Receitas">
-
-                <article class="card resumo-saidas margem-baixo" id="card-resumo-receitas">
-                    <div class="resumo-receitas__topo">
-                        <h3 class="tabela__titulo">Recebimentos do mês <small id="resumo-receitas-mes"></small></h3>
-                        <button class="botao botao--fantasma" type="button" id="btn-baixar-resumo">⬇ Baixar resumo (CSV)</button>
-                    </div>
-                    <div class="resumo-saidas__grade">
-                        <div class="resumo-saidas__item resumo-rec__item--previsto">
-                            <span>Previsto</span>
-                            <strong id="rec-previsto">R$ 0,00</strong>
-                            <small>total esperado no mês</small>
-                        </div>
-                        <div class="resumo-saidas__item resumo-rec__item--recebido">
-                            <span>Recebido</span>
-                            <strong id="rec-recebido">R$ 0,00</strong>
-                            <small id="rec-recebido-detalhe">—</small>
-                        </div>
-                        <div class="resumo-saidas__item resumo-rec__item--areceber">
-                            <span>A receber</span>
-                            <strong id="rec-areceber">R$ 0,00</strong>
-                            <small id="rec-areceber-detalhe">—</small>
-                        </div>
-                        <div class="resumo-saidas__item resumo-rec__item--resultado">
-                            <span>Resultado (recebido − saídas)</span>
-                            <strong id="rec-resultado">R$ 0,00</strong>
-                            <small>fechamento do mês</small>
-                        </div>
-                    </div>
-                    <div class="rec-pendentes" id="rec-pendentes"></div>
-                </article>
-
-                <div class="abas" role="tablist">
-                    <button class="aba is-ativa" type="button" data-aba="recorrentes">Clientes Recorrentes</button>
-                    <button class="aba" type="button" data-aba="unicos">Projetos Únicos</button>
-                    <button class="aba" type="button" data-aba="upsells">Upsells</button>
-                </div>
-
-                <!-- ABA 1: Clientes de base -->
-                <div class="painel-aba is-ativa" id="aba-recorrentes">
-                    <article class="card">
-                        <header class="card__cabecalho">
-                            <div>
-                                <h3>Clientes de base</h3>
-                                <p class="card__descricao">Contratos recorrentes — a ficha guarda CNPJ, contatos, emissão de NF e recorrência de pagamento.</p>
-                            </div>
-                            <button class="botao botao--primario" type="button" id="botao-novo-cliente">+ Novo Cliente</button>
-                        </header>
-                        <div class="tabela__scroll">
-                            <table class="tabela">
-                                <thead>
-                                    <tr>
-                                        <th>Empresa</th>
-                                        <th>CNPJ</th>
-                                        <th>Recorrência</th>
-                                        <th>Faturamento</th>
-                                        <th class="alinha-direita">Valor</th>
-                                        <th>Status</th>
-                                        <th class="alinha-direita">Ações</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="tabela-clientes"></tbody>
-                            </table>
-                        </div>
-                    </article>
-                </div>
-
-                <!-- ABA 2: Projetos únicos -->
-                <div class="painel-aba" id="aba-unicos">
-                    <article class="card">
-                        <header class="card__cabecalho">
-                            <div>
-                                <h3>Projetos únicos &amp; freelas</h3>
-                                <p class="card__descricao">Entregas pontuais — o sistema valida se o orçamento mantém a margem mínima de 20% sobre os custos.</p>
-                            </div>
-                            <button class="botao botao--primario" type="button" id="botao-novo-projeto">+ Novo Projeto</button>
-                        </header>
-                        <div class="tabela__scroll">
-                            <table class="tabela">
-                                <thead>
-                                    <tr>
-                                        <th>Empresa</th>
-                                        <th>Serviço</th>
-                                        <th>Entrega</th>
-                                        <th class="alinha-direita">Custos</th>
-                                        <th class="alinha-direita">Orçamento</th>
-                                        <th>Margem</th>
-                                        <th>Status</th>
-                                        <th class="alinha-direita">Ações</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="tabela-projetos"></tbody>
-                            </table>
-                        </div>
-                    </article>
-                </div>
-
-                <!-- ABA 3: Upsells -->
-                <div class="painel-aba" id="aba-upsells">
-                    <article class="card">
-                        <header class="card__cabecalho">
-                            <div>
-                                <h3>Upsells</h3>
-                                <p class="card__descricao">Vendas adicionais registradas para os clientes de base.</p>
-                            </div>
-                            <button class="botao botao--primario" type="button" id="botao-novo-upsell">+ Registrar Upsell</button>
-                        </header>
-                        <div class="tabela__scroll">
-                            <table class="tabela">
-                                <thead>
-                                    <tr>
-                                        <th>Cliente</th>
-                                        <th>Descrição</th>
-                                        <th>Data</th>
-                                        <th class="alinha-direita">Valor</th>
-                                        <th>Status</th>
-                                        <th class="alinha-direita">Ações</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="tabela-upsells"></tbody>
-                                <tfoot>
-                                    <tr>
-                                        <td colspan="3">Total registrado</td>
-                                        <td class="alinha-direita valor--receita" id="total-upsells">R$ 0,00</td>
-                                        <td colspan="2"></td>
-                                    </tr>
-                                </tfoot>
-                            </table>
-                        </div>
-                    </article>
-                </div>
-            </section>
-
-            <!-- ===== SEÇÃO: CARTEIRA DE CLIENTES ===== -->
-            <section class="secao" id="secao-carteira" aria-label="Carteira de clientes">
-                <header class="carteira__topo">
-                    <p class="card__descricao">Visão completa da base recorrente — mensalidades, contratos no Drive e orientações para os responsáveis. Clientes criados aqui entram automaticamente nas Receitas.</p>
-                    <button class="botao botao--primario" type="button" id="botao-cliente-carteira">+ Novo Cliente</button>
-                </header>
-
-                <div class="carteira" id="grade-carteira"></div>
-            </section>
-
-            <!-- ===== SEÇÃO: DESPESAS (SAÍDAS) ===== -->
-            <section class="secao" id="secao-despesas" aria-label="Despesas">
-                <article class="card grafico margem-baixo">
-                    <h3 class="grafico__titulo">Fluxo de caixa projetado <small>entradas e saídas previstas por dia do mês</small></h3>
-                    <div class="grafico__area">
-                        <canvas id="grafico-fluxo" role="img" aria-label="Projeção diária de entradas, saídas e saldo acumulado do mês"></canvas>
-                    </div>
-                </article>
-
-                <div class="abas" role="tablist">
-                    <button class="aba is-ativa" type="button" data-aba="fixas">Despesas Fixas</button>
-                    <button class="aba" type="button" data-aba="colaboradores">Colaboradores</button>
-                    <button class="aba" type="button" data-aba="variaveis">Despesas Variáveis</button>
-                </div>
-
-                <!-- ABA 1: Despesas fixas -->
-                <div class="painel-aba is-ativa" id="aba-fixas">
-                    <article class="card">
-                        <header class="card__cabecalho">
-                            <div>
-                                <h3>Despesas fixas</h3>
-                                <p class="card__descricao">Compromissos que se repetem todo mês — aluguel, assinaturas, contabilidade.</p>
-                            </div>
-                            <button class="botao botao--primario" type="button" id="botao-nova-fixa">+ Nova Despesa Fixa</button>
-                        </header>
-                        <div class="tabela__scroll">
-                            <table class="tabela">
-                                <thead>
-                                    <tr>
-                                        <th>Descrição</th>
-                                        <th>Categoria</th>
-                                        <th>Vencimento</th>
-                                        <th class="alinha-direita">Valor</th>
-                                        <th class="alinha-direita">Ações</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="tabela-fixas"></tbody>
-                            </table>
-                        </div>
-                    </article>
-                </div>
-
-                <!-- ABA 2: Colaboradores -->
-                <div class="painel-aba" id="aba-colaboradores">
-                    <article class="card">
-                        <header class="card__cabecalho">
-                            <div>
-                                <h3>Colaboradores</h3>
-                                <p class="card__descricao">Folha da equipe — a ficha guarda contato, CPF, chave PIX e o dia de pagamento.</p>
-                            </div>
-                            <button class="botao botao--primario" type="button" id="botao-novo-colaborador">+ Novo Colaborador</button>
-                        </header>
-                        <div class="tabela__scroll">
-                            <table class="tabela">
-                                <thead>
-                                    <tr>
-                                        <th>Colaborador</th>
-                                        <th>Contato</th>
-                                        <th>CPF</th>
-                                        <th>Chave PIX</th>
-                                        <th>Pagamento</th>
-                                        <th class="alinha-direita">Valor</th>
-                                        <th class="alinha-direita">Ações</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="tabela-colaboradores"></tbody>
-                            </table>
-                        </div>
-                    </article>
-                </div>
-
-                <!-- ABA 3: Despesas variáveis -->
-                <div class="painel-aba" id="aba-variaveis">
-                    <article class="card">
-                        <header class="card__cabecalho">
-                            <div>
-                                <h3>Despesas variáveis</h3>
-                                <p class="card__descricao">Gastos pontuais do mês — mídia paga, freelas, compras avulsas.</p>
-                            </div>
-                            <button class="botao botao--primario" type="button" id="botao-nova-variavel">+ Nova Despesa Variável</button>
-                        </header>
-                        <div class="tabela__scroll">
-                            <table class="tabela">
-                                <thead>
-                                    <tr>
-                                        <th>Descrição</th>
-                                        <th>Categoria</th>
-                                        <th>Data</th>
-                                        <th class="alinha-direita">Valor</th>
-                                        <th class="alinha-direita">Ações</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="tabela-variaveis"></tbody>
-                            </table>
-                        </div>
-                    </article>
-                </div>
-
-                <!-- Resumo consolidado das saídas -->
-                <article class="card resumo-saidas">
-                    <h3 class="tabela__titulo">Resumo das saídas <small>projeção do mês atual</small></h3>
-                    <div class="resumo-saidas__grade">
-                        <div class="resumo-saidas__item resumo-saidas__item--fixas">
-                            <span>Despesas fixas</span>
-                            <strong id="resumo-fixas">R$ 0,00</strong>
-                            <small id="resumo-fixas-detalhe">—</small>
-                        </div>
-                        <div class="resumo-saidas__item resumo-saidas__item--equipe">
-                            <span>Colaboradores</span>
-                            <strong id="resumo-colaboradores">R$ 0,00</strong>
-                            <small id="resumo-colaboradores-detalhe">—</small>
-                        </div>
-                        <div class="resumo-saidas__item resumo-saidas__item--variaveis">
-                            <span>Despesas variáveis</span>
-                            <strong id="resumo-variaveis">R$ 0,00</strong>
-                            <small id="resumo-variaveis-detalhe">—</small>
-                        </div>
-                        <div class="resumo-saidas__item resumo-saidas__item--total">
-                            <span>Total de saídas do mês</span>
-                            <strong id="resumo-total">R$ 0,00</strong>
-                            <small>fixas + colaboradores + variáveis</small>
-                        </div>
-                    </div>
-                </article>
-            </section>
-
-            <!-- ===== SEÇÃO: CONFIGURAÇÕES ===== -->
-            <section class="secao" id="secao-configuracoes" aria-label="Configurações">
-                <div class="config-grade">
-
-                    <!-- Gestão de usuários — visível apenas para o admin -->
-                    <article class="card" id="card-usuarios" hidden>
-                        <h3 class="tabela__titulo">Usuários do sistema</h3>
-                        <p class="card__descricao margem-baixo" id="usuarios-ajuda"></p>
-
-                        <form class="config-form-linha" id="form-usuario">
-                            <input class="campo__entrada" type="email" id="usuario-email" required
-                                   placeholder="email@colaborador.com" autocomplete="off">
-                            <button class="botao botao--primario" type="submit">Adicionar</button>
-                        </form>
-
-                        <ul class="lista-usuarios" id="lista-usuarios"></ul>
-                    </article>
-
-                    <!-- Zona de dados — visível apenas para o admin -->
-                    <article class="card" id="card-dados" hidden>
-                        <h3 class="tabela__titulo">Dados do sistema</h3>
-                        <p class="card__descricao margem-baixo">Apaga <strong>todos</strong> os clientes, projetos, upsells, despesas, colaboradores e orientações. Os logins e usuários são mantidos. Esta ação não pode ser desfeita.</p>
-                        <button class="botao botao--fantasma" type="button" id="btn-limpar-dados">Apagar todos os dados</button>
-                    </article>
-
-                    <!-- Minha conta -->
-                    <article class="card">
-                        <h3 class="tabela__titulo">Minha conta</h3>
-                        <p class="card__descricao margem-baixo">Sua foto de perfil e a senha de acesso ao sistema.</p>
-
-                        <div class="foto-perfil">
-                            <span class="avatar avatar--grande" id="preview-foto">LU</span>
-                            <div class="foto-perfil__acoes">
-                                <label class="botao botao--fantasma foto-perfil__label" for="input-foto">Escolher foto</label>
-                                <button class="botao botao--fantasma" type="button" id="btn-remover-foto">Remover</button>
-                                <input type="file" id="input-foto" accept="image/*" hidden>
-                                <small class="foto-perfil__dica">Uma imagem quadrada fica melhor. A foto fica salva na sua conta.</small>
-                            </div>
-                        </div>
-
-                        <form class="configuracoes__form" id="form-senha">
-                            <div class="campo">
-                                <label class="campo__rotulo" for="senha-atual">Senha atual</label>
-                                <input class="campo__entrada" type="password" id="senha-atual" required autocomplete="current-password">
-                            </div>
-                            <div class="campo">
-                                <label class="campo__rotulo" for="senha-nova">Nova senha (mín. 6 caracteres)</label>
-                                <input class="campo__entrada" type="password" id="senha-nova" required minlength="6" autocomplete="new-password">
-                            </div>
-                            <div class="campo">
-                                <label class="campo__rotulo" for="senha-confirma">Confirmar nova senha</label>
-                                <input class="campo__entrada" type="password" id="senha-confirma" required autocomplete="new-password">
-                            </div>
-                            <button class="botao botao--primario" type="submit">Alterar senha</button>
-                        </form>
-                    </article>
-
-                    <!-- Preferências gerais -->
-                    <article class="card configuracoes">
-                        <h3 class="tabela__titulo">Preferências</h3>
-                        <form class="configuracoes__form" id="form-configuracoes">
-                            <div class="campo">
-                                <label class="campo__rotulo" for="conf-nome">Nome da empresa</label>
-                                <input class="campo__entrada" type="text" id="conf-nome" value="LUSH. Global Marketing">
-                            </div>
-                            <div class="campo">
-                                <label class="campo__rotulo" for="conf-email">E-mail de contato</label>
-                                <input class="campo__entrada" type="email" id="conf-email" value="financeiro@lush.com">
-                            </div>
-                            <div class="campo">
-                                <label class="campo__rotulo" for="conf-moeda">Moeda padrão</label>
-                                <select class="campo__entrada" id="conf-moeda">
-                                    <option selected>Real (R$)</option>
-                                    <option>Dólar (US$)</option>
-                                    <option>Euro (€)</option>
-                                </select>
-                            </div>
-                            <button class="botao botao--primario" type="submit">Salvar alterações</button>
-                        </form>
-                    </article>
-
-                </div>
-            </section>
-
-        </main>
-    </div>
-
-    <!-- ============================================================
-         MODAIS (fichas e cadastros)
-    ============================================================ -->
-
-    <!-- Ficha de cliente recorrente -->
-    <dialog class="modal" id="modal-cliente">
-        <form class="modal__form" id="form-cliente">
-            <header class="modal__cabecalho">
-                <h3 id="titulo-modal-cliente">Ficha do Cliente</h3>
-                <button class="modal__fechar" type="button" data-fechar aria-label="Fechar">✕</button>
-            </header>
-
-            <input type="hidden" id="cliente-id">
-
-            <div class="modal__grade">
-                <div class="campo campo--inteiro">
-                    <label class="campo__rotulo" for="cliente-empresa">Nome da empresa *</label>
-                    <input class="campo__entrada" type="text" id="cliente-empresa" required placeholder="Ex.: Clínica Vitalle">
-                </div>
-                <div class="campo">
-                    <label class="campo__rotulo" for="cliente-cnpj">CNPJ *</label>
-                    <input class="campo__entrada" type="text" id="cliente-cnpj" required placeholder="00.000.000/0000-00" inputmode="numeric">
-                </div>
-                <div class="campo">
-                    <label class="campo__rotulo" for="cliente-inicio">Início do contrato</label>
-                    <input class="campo__entrada" type="date" id="cliente-inicio">
-                </div>
-                <div class="campo">
-                    <label class="campo__rotulo" for="cliente-gestor">Gestor do contrato</label>
-                    <input class="campo__entrada" type="text" id="cliente-gestor" placeholder="Nome do gestor">
-                </div>
-                <div class="campo">
-                    <label class="campo__rotulo" for="cliente-gestor-contato">Contato do gestor</label>
-                    <input class="campo__entrada" type="text" id="cliente-gestor-contato" placeholder="Telefone ou e-mail">
-                </div>
-                <div class="campo">
-                    <label class="campo__rotulo" for="cliente-financeiro">Responsável financeiro</label>
-                    <input class="campo__entrada" type="text" id="cliente-financeiro" placeholder="Nome do financeiro">
-                </div>
-                <div class="campo">
-                    <label class="campo__rotulo" for="cliente-financeiro-contato">Contato do financeiro</label>
-                    <input class="campo__entrada" type="text" id="cliente-financeiro-contato" placeholder="Telefone ou e-mail">
-                </div>
-                <div class="campo">
-                    <label class="campo__rotulo" for="cliente-responsavel">Colaborador responsável</label>
-                    <select class="campo__entrada" id="cliente-responsavel"></select>
-                </div>
-                <div class="campo">
-                    <label class="campo__rotulo" for="cliente-recorrencia">Recorrência de pagamento</label>
-                    <select class="campo__entrada" id="cliente-recorrencia">
-                        <option>Mensal</option>
-                        <option>Trimestral</option>
-                        <option>Semestral</option>
-                        <option>Anual</option>
-                    </select>
-                </div>
-                <div class="campo">
-                    <label class="campo__rotulo" for="cliente-dia">Dia da cobrança (1–28)</label>
-                    <input class="campo__entrada" type="number" id="cliente-dia" min="1" max="28" value="5" required>
-                </div>
-                <div class="campo">
-                    <label class="campo__rotulo" for="cliente-valor">Valor da recorrência (R$) *</label>
-                    <input class="campo__entrada" type="number" id="cliente-valor" min="0" step="0.01" required placeholder="0,00">
-                </div>
-                <div class="campo campo--inteiro">
-                    <label class="campo__rotulo" for="cliente-drive">Pasta de contratos no Google Drive</label>
-                    <input class="campo__entrada" type="url" id="cliente-drive" placeholder="https://drive.google.com/drive/folders/...">
-                </div>
-                <div class="campo campo--check campo--inteiro">
-                    <input type="checkbox" id="cliente-nf" checked>
-                    <label class="campo__rotulo" for="cliente-nf">Este cliente exige emissão de nota fiscal</label>
-                </div>
-            </div>
-
-            <footer class="modal__rodape">
-                <button class="botao botao--fantasma" type="button" data-fechar>Cancelar</button>
-                <button class="botao botao--primario" type="submit">Salvar cliente</button>
-            </footer>
-        </form>
-    </dialog>
-
-    <!-- Ficha de projeto único / freela -->
-    <dialog class="modal" id="modal-projeto">
-        <form class="modal__form" id="form-projeto">
-            <header class="modal__cabecalho">
-                <h3 id="titulo-modal-projeto">Ficha do Projeto Único</h3>
-                <button class="modal__fechar" type="button" data-fechar aria-label="Fechar">✕</button>
-            </header>
-
-            <input type="hidden" id="projeto-id">
-
-            <div class="modal__grade">
-                <div class="campo campo--inteiro">
-                    <label class="campo__rotulo" for="projeto-empresa">Nome da empresa / cliente *</label>
-                    <input class="campo__entrada" type="text" id="projeto-empresa" required>
-                </div>
-                <div class="campo">
-                    <label class="campo__rotulo" for="projeto-cnpj">CNPJ / CPF</label>
-                    <input class="campo__entrada" type="text" id="projeto-cnpj" placeholder="00.000.000/0000-00" inputmode="numeric">
-                </div>
-                <div class="campo">
-                    <label class="campo__rotulo" for="projeto-servico">Serviço contratado *</label>
-                    <input class="campo__entrada" type="text" id="projeto-servico" required placeholder="Ex.: Identidade visual">
-                </div>
-                <div class="campo">
-                    <label class="campo__rotulo" for="projeto-gestor">Gestor do contrato</label>
-                    <input class="campo__entrada" type="text" id="projeto-gestor">
-                </div>
-                <div class="campo">
-                    <label class="campo__rotulo" for="projeto-gestor-contato">Contato do gestor</label>
-                    <input class="campo__entrada" type="text" id="projeto-gestor-contato">
-                </div>
-                <div class="campo">
-                    <label class="campo__rotulo" for="projeto-financeiro">Responsável financeiro</label>
-                    <input class="campo__entrada" type="text" id="projeto-financeiro">
-                </div>
-                <div class="campo">
-                    <label class="campo__rotulo" for="projeto-financeiro-contato">Contato do financeiro</label>
-                    <input class="campo__entrada" type="text" id="projeto-financeiro-contato">
-                </div>
-                <div class="campo">
-                    <label class="campo__rotulo" for="projeto-entrega">Data de entrega</label>
-                    <input class="campo__entrada" type="date" id="projeto-entrega">
-                </div>
-                <div class="campo campo--check">
-                    <input type="checkbox" id="projeto-nf">
-                    <label class="campo__rotulo" for="projeto-nf">Exige emissão de NF</label>
-                </div>
-                <div class="campo">
-                    <label class="campo__rotulo" for="projeto-custo">Meus custos totais (R$) *</label>
-                    <input class="campo__entrada" type="number" id="projeto-custo" min="0" step="0.01" required placeholder="0,00">
-                </div>
-                <div class="campo">
-                    <label class="campo__rotulo" for="projeto-valor">Valor orçado / estipulado (R$) *</label>
-                    <input class="campo__entrada" type="number" id="projeto-valor" min="0" step="0.01" required placeholder="0,00">
-                </div>
-
-                <div class="calculo" id="projeto-calculo">
-                    <div>
-                        <span>Margem projetada</span>
-                        <strong id="calculo-percentual">—</strong>
-                    </div>
-                    <div>
-                        <span>Preço mínimo (margem 20%)</span>
-                        <strong id="calculo-minimo">—</strong>
-                    </div>
-                    <p id="calculo-status">Informe os custos e o valor orçado para calcular.</p>
-                </div>
-            </div>
-
-            <footer class="modal__rodape">
-                <button class="botao botao--fantasma" type="button" data-fechar>Cancelar</button>
-                <button class="botao botao--primario" type="submit">Salvar projeto</button>
-            </footer>
-        </form>
-    </dialog>
-
-    <!-- Registro de upsell -->
-    <dialog class="modal" id="modal-upsell">
-        <form class="modal__form" id="form-upsell">
-            <header class="modal__cabecalho">
-                <h3>Registrar Upsell</h3>
-                <button class="modal__fechar" type="button" data-fechar aria-label="Fechar">✕</button>
-            </header>
-
-            <div class="modal__grade">
-                <div class="campo campo--inteiro">
-                    <label class="campo__rotulo" for="upsell-cliente">Cliente de base *</label>
-                    <select class="campo__entrada" id="upsell-cliente" required></select>
-                </div>
-                <div class="campo campo--inteiro">
-                    <label class="campo__rotulo" for="upsell-descricao">Descrição da venda *</label>
-                    <input class="campo__entrada" type="text" id="upsell-descricao" required placeholder="Ex.: Campanha extra de fim de ano">
-                </div>
-                <div class="campo">
-                    <label class="campo__rotulo" for="upsell-data">Data</label>
-                    <input class="campo__entrada" type="date" id="upsell-data">
-                </div>
-                <div class="campo">
-                    <label class="campo__rotulo" for="upsell-valor">Valor (R$) *</label>
-                    <input class="campo__entrada" type="number" id="upsell-valor" min="0" step="0.01" required placeholder="0,00">
-                </div>
-            </div>
-
-            <footer class="modal__rodape">
-                <button class="botao botao--fantasma" type="button" data-fechar>Cancelar</button>
-                <button class="botao botao--primario" type="submit">Salvar upsell</button>
-            </footer>
-        </form>
-    </dialog>
-
-    <!-- Ficha de despesa fixa -->
-    <dialog class="modal" id="modal-fixa">
-        <form class="modal__form" id="form-fixa">
-            <header class="modal__cabecalho">
-                <h3 id="titulo-modal-fixa">Nova Despesa Fixa</h3>
-                <button class="modal__fechar" type="button" data-fechar aria-label="Fechar">✕</button>
-            </header>
-
-            <input type="hidden" id="fixa-id">
-
-            <div class="modal__grade">
-                <div class="campo campo--inteiro">
-                    <label class="campo__rotulo" for="fixa-descricao">Descrição *</label>
-                    <input class="campo__entrada" type="text" id="fixa-descricao" required placeholder="Ex.: Aluguel do estúdio">
-                </div>
-                <div class="campo">
-                    <label class="campo__rotulo" for="fixa-categoria">Categoria</label>
-                    <select class="campo__entrada" id="fixa-categoria">
-                        <option>Estrutura</option>
-                        <option>Ferramentas &amp; Software</option>
-                        <option>Tráfego Pago</option>
-                        <option>Equipe &amp; Freelas</option>
-                        <option>Impostos &amp; Taxas</option>
-                        <option>Serviços</option>
-                        <option>Outros</option>
-                    </select>
-                </div>
-                <div class="campo">
-                    <label class="campo__rotulo" for="fixa-dia">Dia do vencimento (1–28)</label>
-                    <input class="campo__entrada" type="number" id="fixa-dia" min="1" max="28" value="5" required>
-                </div>
-                <div class="campo campo--inteiro">
-                    <label class="campo__rotulo" for="fixa-valor">Valor mensal (R$) *</label>
-                    <input class="campo__entrada" type="number" id="fixa-valor" min="0" step="0.01" required placeholder="0,00">
-                </div>
-            </div>
-
-            <footer class="modal__rodape">
-                <button class="botao botao--fantasma" type="button" data-fechar>Cancelar</button>
-                <button class="botao botao--primario" type="submit">Salvar despesa</button>
-            </footer>
-        </form>
-    </dialog>
-
-    <!-- Ficha de colaborador -->
-    <dialog class="modal" id="modal-colaborador">
-        <form class="modal__form" id="form-colaborador">
-            <header class="modal__cabecalho">
-                <h3 id="titulo-modal-colaborador">Ficha do Colaborador</h3>
-                <button class="modal__fechar" type="button" data-fechar aria-label="Fechar">✕</button>
-            </header>
-
-            <input type="hidden" id="colaborador-id">
-
-            <div class="modal__grade">
-                <div class="campo campo--inteiro">
-                    <label class="campo__rotulo" for="colaborador-nome">Nome completo *</label>
-                    <input class="campo__entrada" type="text" id="colaborador-nome" required placeholder="Ex.: Marina Costa">
-                </div>
-                <div class="campo">
-                    <label class="campo__rotulo" for="colaborador-funcao">Função</label>
-                    <input class="campo__entrada" type="text" id="colaborador-funcao" placeholder="Ex.: Social Media">
-                </div>
-                <div class="campo">
-                    <label class="campo__rotulo" for="colaborador-contato">Contato *</label>
-                    <input class="campo__entrada" type="text" id="colaborador-contato" required placeholder="Telefone ou e-mail">
-                </div>
-                <div class="campo">
-                    <label class="campo__rotulo" for="colaborador-cpf">CPF *</label>
-                    <input class="campo__entrada" type="text" id="colaborador-cpf" required placeholder="000.000.000-00" inputmode="numeric">
-                </div>
-                <div class="campo">
-                    <label class="campo__rotulo" for="colaborador-pix">Chave PIX *</label>
-                    <input class="campo__entrada" type="text" id="colaborador-pix" required placeholder="CPF, e-mail, telefone ou aleatória">
-                </div>
-                <div class="campo">
-                    <label class="campo__rotulo" for="colaborador-dia">Dia do pagamento (1–28)</label>
-                    <input class="campo__entrada" type="number" id="colaborador-dia" min="1" max="28" value="5" required>
-                </div>
-                <div class="campo">
-                    <label class="campo__rotulo" for="colaborador-valor">Valor mensal (R$) *</label>
-                    <input class="campo__entrada" type="number" id="colaborador-valor" min="0" step="0.01" required placeholder="0,00">
-                </div>
-            </div>
-
-            <footer class="modal__rodape">
-                <button class="botao botao--fantasma" type="button" data-fechar>Cancelar</button>
-                <button class="botao botao--primario" type="submit">Salvar colaborador</button>
-            </footer>
-        </form>
-    </dialog>
-
-    <!-- Registro de despesa variável -->
-    <dialog class="modal" id="modal-variavel">
-        <form class="modal__form" id="form-variavel">
-            <header class="modal__cabecalho">
-                <h3 id="titulo-modal-variavel">Nova Despesa Variável</h3>
-                <button class="modal__fechar" type="button" data-fechar aria-label="Fechar">✕</button>
-            </header>
-
-            <input type="hidden" id="variavel-id">
-
-            <div class="modal__grade">
-                <div class="campo campo--inteiro">
-                    <label class="campo__rotulo" for="variavel-descricao">Descrição *</label>
-                    <input class="campo__entrada" type="text" id="variavel-descricao" required placeholder="Ex.: Meta Ads — campanha de julho">
-                </div>
-                <div class="campo">
-                    <label class="campo__rotulo" for="variavel-categoria">Categoria</label>
-                    <select class="campo__entrada" id="variavel-categoria">
-                        <option>Tráfego Pago</option>
-                        <option>Equipe &amp; Freelas</option>
-                        <option>Ferramentas &amp; Software</option>
-                        <option>Estrutura</option>
-                        <option>Impostos &amp; Taxas</option>
-                        <option>Serviços</option>
-                        <option>Outros</option>
-                    </select>
-                </div>
-                <div class="campo">
-                    <label class="campo__rotulo" for="variavel-data">Data</label>
-                    <input class="campo__entrada" type="date" id="variavel-data">
-                </div>
-                <div class="campo campo--inteiro">
-                    <label class="campo__rotulo" for="variavel-valor">Valor (R$) *</label>
-                    <input class="campo__entrada" type="number" id="variavel-valor" min="0" step="0.01" required placeholder="0,00">
-                </div>
-            </div>
-
-            <footer class="modal__rodape">
-                <button class="botao botao--fantasma" type="button" data-fechar>Cancelar</button>
-                <button class="botao botao--primario" type="submit">Salvar despesa</button>
-            </footer>
-        </form>
-    </dialog>
-
-    <!-- Canal de orientações por cliente -->
-    <dialog class="modal" id="modal-chat">
-        <form class="modal__form" id="form-chat">
-            <header class="modal__cabecalho">
-                <h3 id="titulo-modal-chat">Orientações</h3>
-                <button class="modal__fechar" type="button" data-fechar aria-label="Fechar">✕</button>
-            </header>
-
-            <input type="hidden" id="chat-cliente-id">
-            <p class="chat__responsavel" id="chat-responsavel"></p>
-
-            <div class="chat__mensagens" id="chat-mensagens"></div>
-
-            <div class="campo">
-                <label class="campo__rotulo" for="chat-texto">Nova orientação</label>
-                <textarea class="campo__entrada chat__campo" id="chat-texto" rows="3" required
-                          placeholder="Ex.: A partir deste mês o cliente quer os relatórios toda sexta-feira."></textarea>
-            </div>
-
-            <footer class="modal__rodape">
-                <button class="botao botao--fantasma" type="button" data-fechar>Fechar</button>
-                <button class="botao botao--primario" type="submit">Enviar orientação</button>
-            </footer>
-        </form>
-    </dialog>
-
-</body>
-</html>
+/* ============================================================
+   LUSH. FINANCE — style.css
+   Identidade da marca: fundo profundo #120917 com brilhos
+   radiais roxo/magenta, tipografia Space Grotesk e acentos
+   em verde (receita) e vermelho (despesa).
+============================================================ */
+
+:root {
+    --primaria:   #9D14FF;
+    --secundaria: #C858C6;
+    --receita:    #2FD57B;
+    --despesa:    #FF4D5E;
+    --alerta:     #FFB454;
+
+    --fundo:      #120917;
+    --card:       #1B0F23;
+    --card-alto:  #241531;
+    --linha:      rgba(255, 255, 255, 0.08);
+
+    --texto:      #FFFFFF;
+    --texto-suave: rgba(255, 255, 255, 0.65);
+    --texto-fraco: rgba(255, 255, 255, 0.40);
+
+    --raio:       16px;
+    --raio-p:     10px;
+    --sombra:     0 24px 60px -30px rgba(0, 0, 0, 0.9);
+    --sidebar-w:  256px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; }
+
+/* CRÍTICO: garante que o atributo hidden realmente esconda o
+   elemento, mesmo quando a classe define display (.login/.sistema).
+   É isso que faz a troca entre tela de login e sistema funcionar. */
+[hidden] { display: none !important; }
+
+body {
+    font-family: 'Space Grotesk', system-ui, -apple-system, sans-serif;
+    background: var(--fundo);
+    color: var(--texto);
+    min-height: 100vh;
+    padding-top: var(--banner-altura, 0px);
+    -webkit-font-smoothing: antialiased;
+}
+
+/* Brilhos radiais da marca no fundo */
+body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    background:
+        radial-gradient(60% 55% at 18% 12%, rgba(157, 20, 255, 0.28), transparent 60%),
+        radial-gradient(55% 50% at 88% 8%,  rgba(200, 88, 198, 0.20), transparent 55%),
+        radial-gradient(70% 60% at 80% 95%, rgba(157, 20, 255, 0.14), transparent 60%);
+    pointer-events: none;
+}
+
+/* ---------- Banner de modo (local / nuvem) ---------- */
+.modo-banner {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 1000;
+    padding: 8px 16px;
+    text-align: center;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: #120917;
+    background: var(--alerta);
+}
+.modo-banner--nuvem { background: var(--receita); }
+.modo-banner a { color: inherit; text-decoration: underline; }
+
+/* ============================================================
+   BOTÕES E CAMPOS (base reutilizada)
+============================================================ */
+
+.botao {
+    font: inherit;
+    font-weight: 600;
+    border: 0;
+    border-radius: var(--raio-p);
+    padding: 11px 20px;
+    cursor: pointer;
+    transition: transform .12s ease, filter .12s ease, background .12s ease;
+    white-space: nowrap;
+}
+.botao:active { transform: translateY(1px); }
+
+.botao--primario {
+    color: #fff;
+    background: linear-gradient(135deg, var(--primaria), var(--secundaria));
+    box-shadow: 0 10px 24px -12px rgba(157, 20, 255, 0.9);
+}
+.botao--primario:hover { filter: brightness(1.08); }
+
+.botao--fantasma {
+    color: var(--texto-suave);
+    background: transparent;
+    border: 1px solid var(--linha);
+}
+.botao--fantasma:hover { color: #fff; border-color: rgba(255,255,255,0.25); }
+
+.botao-icone {
+    font: inherit;
+    font-size: 0.82rem;
+    font-weight: 500;
+    color: var(--texto-suave);
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--linha);
+    border-radius: 8px;
+    padding: 6px 11px;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    transition: all .12s ease;
+}
+.botao-icone:hover { color: #fff; background: rgba(255,255,255,0.1); }
+.botao-icone:disabled { opacity: .5; cursor: not-allowed; }
+.botao-icone--perigo:hover { color: var(--despesa); border-color: rgba(255, 77, 94, 0.5); background: rgba(255, 77, 94, 0.1); }
+
+.campo { display: flex; flex-direction: column; gap: 6px; }
+.campo__rotulo { font-size: 0.82rem; color: var(--texto-suave); font-weight: 500; }
+
+.campo__entrada {
+    font: inherit;
+    color: #fff;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--linha);
+    border-radius: var(--raio-p);
+    padding: 11px 13px;
+    width: 100%;
+    transition: border-color .12s ease, box-shadow .12s ease;
+}
+.campo__entrada::placeholder { color: var(--texto-fraco); }
+.campo__entrada:focus {
+    outline: none;
+    border-color: var(--primaria);
+    box-shadow: 0 0 0 3px rgba(157, 20, 255, 0.22);
+}
+select.campo__entrada { appearance: none; cursor: pointer; }
+
+.campo--check { flex-direction: row; align-items: center; gap: 10px; }
+.campo--check input { width: 18px; height: 18px; accent-color: var(--primaria); }
+.campo--check .campo__rotulo { margin: 0; }
+
+/* ============================================================
+   TELA DE LOGIN
+============================================================ */
+
+.login {
+    min-height: 100vh;
+    display: grid;
+    place-items: center;
+    padding: 24px;
+}
+
+.login__card {
+    width: 100%;
+    max-width: 400px;
+    background: linear-gradient(180deg, rgba(36, 21, 49, 0.9), rgba(27, 15, 35, 0.95));
+    border: 1px solid var(--linha);
+    border-radius: var(--raio);
+    box-shadow: var(--sombra);
+    padding: 40px 34px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    backdrop-filter: blur(6px);
+}
+
+.login__logo { height: 48px; width: auto; align-self: flex-start; margin-bottom: 6px; }
+.login__titulo { font-size: 1.6rem; font-weight: 700; }
+.login__subtitulo { color: var(--texto-suave); font-size: 0.92rem; margin-top: -8px; }
+
+.login__erro {
+    color: var(--despesa);
+    font-size: 0.85rem;
+    background: rgba(255, 77, 94, 0.1);
+    border: 1px solid rgba(255, 77, 94, 0.3);
+    border-radius: 8px;
+    padding: 8px 12px;
+}
+
+.login__entrar { margin-top: 4px; }
+
+.login__dica {
+    font-size: 0.78rem;
+    color: var(--texto-fraco);
+    line-height: 1.6;
+    border-top: 1px solid var(--linha);
+    padding-top: 14px;
+}
+.login__dica strong { color: var(--texto-suave); }
+
+/* ============================================================
+   LAYOUT DO SISTEMA
+============================================================ */
+
+.sistema { display: flex; height: calc(100vh - var(--banner-altura, 0px)); overflow: hidden; }
+
+.sidebar {
+    width: var(--sidebar-w);
+    flex-shrink: 0;
+    background: rgba(20, 11, 27, 0.75);
+    border-right: 1px solid var(--linha);
+    padding: 26px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    height: 100%;
+    overflow-y: auto;
+    backdrop-filter: blur(8px);
+}
+
+.sidebar__logo { height: 34px; width: auto; align-self: flex-start; padding-left: 6px; }
+
+.sidebar__nav { display: flex; flex-direction: column; gap: 4px; flex: 1; }
+
+.sidebar__item {
+    font: inherit;
+    font-size: 0.92rem;
+    font-weight: 500;
+    color: var(--texto-suave);
+    background: transparent;
+    border: 0;
+    border-radius: var(--raio-p);
+    padding: 11px 13px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+    text-align: left;
+    transition: all .12s ease;
+}
+.sidebar__item svg { width: 20px; height: 20px; fill: currentColor; flex-shrink: 0; }
+.sidebar__item:hover { color: #fff; background: rgba(255, 255, 255, 0.05); }
+.sidebar__item.is-ativo {
+    color: #fff;
+    background: linear-gradient(135deg, rgba(157, 20, 255, 0.28), rgba(200, 88, 198, 0.14));
+    box-shadow: inset 0 0 0 1px rgba(157, 20, 255, 0.35);
+}
+
+.sidebar__rodape {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding-top: 18px;
+    border-top: 1px solid var(--linha);
+}
+.sidebar__usuario { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+.sidebar__usuario strong { font-size: 0.85rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sidebar__usuario small { font-size: 0.72rem; color: var(--texto-fraco); }
+
+.sidebar__sair {
+    background: transparent;
+    border: 0;
+    color: var(--texto-suave);
+    cursor: pointer;
+    padding: 6px;
+    border-radius: 8px;
+    display: grid;
+    place-items: center;
+}
+.sidebar__sair svg { width: 20px; height: 20px; fill: currentColor; }
+.sidebar__sair:hover { color: var(--despesa); background: rgba(255, 77, 94, 0.1); }
+
+.avatar {
+    width: 38px; height: 38px;
+    flex-shrink: 0;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: #fff;
+    background: linear-gradient(135deg, var(--primaria), var(--secundaria));
+    background-size: cover;
+    background-position: center;
+    overflow: hidden;
+}
+.avatar--grande { width: 68px; height: 68px; font-size: 1.2rem; }
+
+.foto-perfil { display: flex; align-items: center; gap: 16px; margin-bottom: 20px; }
+.foto-perfil__acoes { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.foto-perfil__label { cursor: pointer; }
+.foto-perfil__dica { width: 100%; font-size: 0.72rem; color: var(--texto-fraco); }
+
+.sidebar-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.55);
+    z-index: 40;
+}
+
+/* ---------- Área de conteúdo ---------- */
+.conteudo { flex: 1; min-width: 0; min-height: 0; height: 100%; overflow-y: auto; padding: 26px 32px 48px; }
+
+.topbar {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 28px;
+}
+.topbar__menu { display: none; background: transparent; border: 0; color: #fff; cursor: pointer; }
+.topbar__menu svg { width: 26px; height: 26px; fill: currentColor; }
+.topbar__titulos { flex: 1; min-width: 0; }
+.topbar__titulos h2 { font-size: 1.5rem; font-weight: 700; }
+.topbar__titulos p { font-size: 0.82rem; color: var(--texto-fraco); }
+
+/* Notificações */
+.notificacoes { position: relative; }
+.topbar__sino {
+    position: relative;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--linha);
+    border-radius: 50%;
+    width: 42px; height: 42px;
+    display: grid;
+    place-items: center;
+    color: var(--texto-suave);
+    cursor: pointer;
+}
+.topbar__sino svg { width: 20px; height: 20px; fill: currentColor; }
+.topbar__sino:hover { color: #fff; }
+.topbar__badge {
+    position: absolute;
+    top: -4px; right: -4px;
+    min-width: 18px; height: 18px;
+    padding: 0 5px;
+    border-radius: 9px;
+    background: var(--despesa);
+    color: #fff;
+    font-size: 0.68rem;
+    font-weight: 700;
+    display: grid;
+    place-items: center;
+}
+
+.notificacoes__painel {
+    position: absolute;
+    top: 52px; right: 0;
+    width: 340px;
+    max-width: 88vw;
+    background: var(--card-alto);
+    border: 1px solid var(--linha);
+    border-radius: var(--raio);
+    box-shadow: var(--sombra);
+    padding: 18px;
+    z-index: 50;
+}
+.notificacoes__painel h4 { font-size: 1rem; margin-bottom: 4px; }
+.notificacoes__aviso { font-size: 0.76rem; color: var(--texto-fraco); line-height: 1.5; margin-bottom: 12px; }
+.notificacoes__lista { list-style: none; display: flex; flex-direction: column; gap: 8px; max-height: 340px; overflow-y: auto; }
+
+.notificacao {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--linha);
+    border-radius: var(--raio-p);
+    padding: 10px 12px;
+    font-size: 0.82rem;
+}
+.notificacao div { flex: 1; }
+.notificacao strong { display: block; font-size: 0.86rem; }
+.notificacao span { color: var(--texto-suave); font-size: 0.76rem; }
+.notificacao--atrasada { border-color: rgba(255, 77, 94, 0.4); background: rgba(255, 77, 94, 0.08); }
+.notificacao--atrasada em { color: var(--despesa); font-style: normal; font-weight: 600; }
+.notificacao--vazia { justify-content: center; color: var(--texto-suave); }
+
+/* ============================================================
+   SEÇÕES E CARDS
+============================================================ */
+
+.secao { display: none; animation: aparecer .25s ease; }
+.secao.is-ativa { display: block; }
+
+@keyframes aparecer { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+.card {
+    background: var(--card);
+    border: 1px solid var(--linha);
+    border-radius: var(--raio);
+    padding: 22px;
+}
+
+.card__cabecalho {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 18px;
+    flex-wrap: wrap;
+}
+.card__cabecalho h3 { font-size: 1.1rem; }
+.card__descricao { font-size: 0.84rem; color: var(--texto-suave); line-height: 1.5; margin-top: 4px; max-width: 60ch; }
+
+.margem-baixo { margin-bottom: 22px; }
+
+/* Cards de resumo */
+.cards-resumo {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+    gap: 18px;
+    margin-bottom: 22px;
+}
+.card-resumo { position: relative; overflow: hidden; }
+.card-resumo::after {
+    content: "";
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 3px;
+    background: var(--primaria);
+}
+.card-resumo--receita::after { background: var(--receita); }
+.card-resumo--despesa::after { background: var(--despesa); }
+.card-resumo--resultado::after { background: var(--alerta); }
+
+.card-resumo__rotulo { font-size: 0.82rem; color: var(--texto-suave); }
+.card-resumo__valor { display: block; font-size: 1.8rem; font-weight: 700; margin: 8px 0; }
+
+.selo {
+    display: inline-block;
+    font-size: 0.74rem;
+    font-weight: 600;
+    padding: 3px 9px;
+    border-radius: 20px;
+}
+.selo--positivo { color: var(--receita); background: rgba(47, 213, 123, 0.12); }
+.selo--negativo { color: var(--despesa); background: rgba(255, 77, 94, 0.12); }
+.selo--neutro   { color: var(--texto-suave); background: rgba(255, 255, 255, 0.08); }
+
+/* Gráficos */
+.graficos { display: grid; grid-template-columns: 1.4fr 1fr; gap: 18px; }
+.grafico__titulo { font-size: 1rem; margin-bottom: 16px; }
+.grafico__titulo small { color: var(--texto-fraco); font-weight: 400; font-size: 0.78rem; }
+.grafico__area { position: relative; height: 300px; }
+
+/* Abas */
+.abas {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 20px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--linha);
+    border-radius: var(--raio-p);
+    padding: 5px;
+    width: fit-content;
+    max-width: 100%;
+    overflow-x: auto;
+}
+.aba {
+    font: inherit;
+    font-size: 0.86rem;
+    font-weight: 500;
+    color: var(--texto-suave);
+    background: transparent;
+    border: 0;
+    border-radius: 8px;
+    padding: 8px 16px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all .12s ease;
+}
+.aba:hover { color: #fff; }
+.aba.is-ativa { color: #fff; background: linear-gradient(135deg, var(--primaria), var(--secundaria)); }
+
+.painel-aba { display: none; }
+.painel-aba.is-ativa { display: block; animation: aparecer .2s ease; }
+
+/* ============================================================
+   TABELAS
+============================================================ */
+
+.tabela__scroll { overflow-x: auto; }
+.tabela { width: 100%; border-collapse: collapse; font-size: 0.88rem; min-width: 620px; }
+.tabela thead th {
+    text-align: left;
+    font-size: 0.74rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--texto-fraco);
+    padding: 0 14px 12px;
+    border-bottom: 1px solid var(--linha);
+}
+.tabela tbody td { padding: 14px; border-bottom: 1px solid var(--linha); vertical-align: middle; }
+.tabela tbody tr:last-child td { border-bottom: 0; }
+.tabela tbody tr:hover { background: rgba(255, 255, 255, 0.02); }
+.tabela tfoot td { padding: 14px; font-weight: 600; border-top: 1px solid var(--linha); }
+
+.alinha-direita { text-align: right; }
+.valor--receita { color: var(--receita); font-weight: 600; }
+.valor--despesa { color: var(--despesa); font-weight: 600; }
+.texto-suave { color: var(--texto-suave); font-size: 0.8rem; }
+
+.tabela__vazia { text-align: center; color: var(--texto-fraco); padding: 34px 14px !important; }
+.tabela__titulo { font-size: 1.05rem; margin-bottom: 4px; }
+.tabela__titulo small { font-weight: 400; color: var(--texto-fraco); font-size: 0.78rem; }
+
+/* ============================================================
+   CARTEIRA DE CLIENTES (cards)
+============================================================ */
+
+.carteira__topo {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 22px;
+    flex-wrap: wrap;
+}
+.carteira {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
+    gap: 18px;
+}
+.carteira__vazia { color: var(--texto-fraco); grid-column: 1 / -1; text-align: center; padding: 40px; }
+
+.cliente-card { display: flex; flex-direction: column; gap: 14px; }
+.cliente-card__topo { display: flex; align-items: center; gap: 12px; }
+.cliente-card__nome { flex: 1; min-width: 0; }
+.cliente-card__nome strong { display: block; }
+.cliente-card__nome small { color: var(--texto-fraco); font-size: 0.76rem; }
+.cliente-card__valor { font-size: 1.35rem; font-weight: 700; color: var(--receita); }
+.cliente-card__valor small { color: var(--texto-fraco); font-size: 0.76rem; font-weight: 400; }
+
+.cliente-card__dados { list-style: none; display: flex; flex-direction: column; gap: 8px; font-size: 0.82rem; }
+.cliente-card__dados li { display: flex; flex-direction: column; gap: 1px; }
+.cliente-card__dados span { color: var(--texto-fraco); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.03em; }
+.cliente-card__dados em { color: var(--texto-fraco); }
+
+.cliente-card__acoes { display: flex; flex-wrap: wrap; gap: 8px; margin-top: auto; padding-top: 12px; border-top: 1px solid var(--linha); }
+
+/* ============================================================
+   RESUMO DAS SAÍDAS
+============================================================ */
+
+.resumo-saidas { margin-top: 22px; }
+.resumo-saidas__grade { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; margin-top: 16px; }
+.resumo-saidas__item {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--linha);
+    border-radius: var(--raio-p);
+    padding: 16px;
+    border-left: 3px solid var(--texto-fraco);
+}
+.resumo-saidas__item span { font-size: 0.8rem; color: var(--texto-suave); }
+.resumo-saidas__item strong { display: block; font-size: 1.3rem; margin: 6px 0 3px; }
+.resumo-saidas__item small { font-size: 0.72rem; color: var(--texto-fraco); }
+.resumo-saidas__item--fixas { border-left-color: var(--primaria); }
+.resumo-saidas__item--equipe { border-left-color: var(--secundaria); }
+.resumo-saidas__item--variaveis { border-left-color: var(--alerta); }
+.resumo-saidas__item--total { border-left-color: var(--despesa); background: rgba(255, 77, 94, 0.06); }
+.resumo-saidas__item--total strong { color: var(--despesa); }
+
+/* Botão de status de pagamento (Receitas) */
+.botao-status {
+    font: inherit;
+    font-size: 0.8rem;
+    font-weight: 600;
+    border: 1px solid var(--linha);
+    border-radius: 8px;
+    padding: 6px 12px;
+    cursor: pointer;
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--texto-suave);
+    transition: all .12s ease;
+    white-space: nowrap;
+}
+.botao-status:hover { color: #fff; border-color: rgba(255, 255, 255, 0.25); }
+.botao-status--pago {
+    color: #0b3d24;
+    background: var(--receita);
+    border-color: transparent;
+}
+.botao-status--pago:hover { color: #0b3d24; filter: brightness(1.05); }
+
+/* Painel de fechamento do mês (Receitas) */
+.resumo-receitas__topo { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.resumo-rec__item--previsto  { border-left-color: var(--primaria); }
+.resumo-rec__item--recebido  { border-left-color: var(--receita); }
+.resumo-rec__item--recebido strong { color: var(--receita); }
+.resumo-rec__item--areceber  { border-left-color: var(--alerta); }
+.resumo-rec__item--resultado { border-left-color: var(--secundaria); }
+
+.rec-pendentes { margin-top: 14px; font-size: 0.82rem; color: var(--texto-suave); }
+.rec-pendentes strong { color: var(--alerta); }
+.rec-pendentes ul { list-style: none; display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.rec-pendentes li {
+    background: rgba(255, 180, 84, 0.1);
+    border: 1px solid rgba(255, 180, 84, 0.3);
+    border-radius: 8px;
+    padding: 4px 10px;
+    color: var(--texto);
+}
+
+/* ============================================================
+   CONFIGURAÇÕES
+============================================================ */
+
+.config-grade { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 18px; align-items: start; }
+.configuracoes__form { display: flex; flex-direction: column; gap: 14px; }
+.config-form-linha { display: flex; gap: 8px; margin-bottom: 16px; }
+.config-form-linha .campo__entrada { flex: 1; }
+
+.lista-usuarios { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+.usuario-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--linha);
+    border-radius: var(--raio-p);
+    padding: 10px 14px;
+}
+.usuario-item__info { display: flex; flex-direction: column; overflow: hidden; }
+.usuario-item__info strong { font-size: 0.86rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.usuario-item__info small { font-size: 0.72rem; color: var(--texto-fraco); }
+
+/* ============================================================
+   MODAIS (dialog)
+============================================================ */
+
+.modal {
+    border: 0;
+    padding: 0;
+    background: transparent;
+    max-width: 620px;
+    width: 92%;
+    color: var(--texto);
+}
+.modal::backdrop { background: rgba(8, 4, 12, 0.72); backdrop-filter: blur(3px); }
+
+.modal__form {
+    background: var(--card-alto);
+    border: 1px solid var(--linha);
+    border-radius: var(--raio);
+    box-shadow: var(--sombra);
+    padding: 26px;
+    max-height: 88vh;
+    overflow-y: auto;
+}
+.modal__cabecalho { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+.modal__cabecalho h3 { font-size: 1.2rem; }
+.modal__fechar { background: transparent; border: 0; color: var(--texto-suave); font-size: 1.1rem; cursor: pointer; padding: 4px 8px; border-radius: 8px; }
+.modal__fechar:hover { color: #fff; background: rgba(255, 255, 255, 0.08); }
+
+.modal__grade { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.campo--inteiro { grid-column: 1 / -1; }
+
+.modal__rodape { display: flex; justify-content: flex-end; gap: 10px; margin-top: 22px; }
+
+/* Calculadora de margem */
+.calculo {
+    grid-column: 1 / -1;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--linha);
+    border-radius: var(--raio-p);
+    padding: 16px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+.calculo > div { display: flex; flex-direction: column; gap: 3px; }
+.calculo span { font-size: 0.76rem; color: var(--texto-suave); }
+.calculo strong { font-size: 1.15rem; }
+.calculo p { grid-column: 1 / -1; font-size: 0.82rem; color: var(--texto-suave); margin: 0; }
+.calculo--ok { border-color: rgba(47, 213, 123, 0.4); background: rgba(47, 213, 123, 0.07); }
+.calculo--ok p { color: var(--receita); }
+.calculo--ruim { border-color: rgba(255, 77, 94, 0.4); background: rgba(255, 77, 94, 0.07); }
+.calculo--ruim p { color: var(--despesa); }
+
+/* Canal de orientações */
+.chat__responsavel { font-size: 0.82rem; color: var(--texto-suave); margin-bottom: 12px; }
+.chat__mensagens {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-height: 320px;
+    overflow-y: auto;
+    padding: 4px;
+    margin-bottom: 14px;
+}
+.chat__vazio { color: var(--texto-fraco); text-align: center; padding: 30px; font-size: 0.86rem; }
+.mensagem { background: rgba(255, 255, 255, 0.04); border: 1px solid var(--linha); border-radius: var(--raio-p); padding: 12px 14px; }
+.mensagem header { display: flex; justify-content: space-between; gap: 10px; margin-bottom: 6px; }
+.mensagem header strong { font-size: 0.84rem; }
+.mensagem header time { font-size: 0.72rem; color: var(--texto-fraco); }
+.mensagem p { font-size: 0.86rem; color: var(--texto-suave); line-height: 1.5; }
+.chat__campo { resize: vertical; min-height: 70px; }
+
+/* ============================================================
+   RESPONSIVO
+============================================================ */
+
+@media (max-width: 1000px) {
+    .graficos { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 760px) {
+    .conteudo { padding: 20px 18px 40px; }
+    .topbar__menu { display: block; }
+
+    .sidebar {
+        position: fixed;
+        left: 0; top: 0;
+        height: 100vh;
+        z-index: 50;
+        transform: translateX(-100%);
+        transition: transform .25s ease;
+    }
+    .sidebar.is-aberta { transform: translateX(0); }
+
+    .modal__grade { grid-template-columns: 1fr; }
+    .calculo { grid-template-columns: 1fr; }
+    .topbar__titulos h2 { font-size: 1.25rem; }
+}
+
+/* Acessibilidade: respeita quem prefere menos animação */
+@media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; }
+}
