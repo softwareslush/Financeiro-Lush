@@ -137,13 +137,13 @@
             <section class="secao is-ativa" id="secao-visao-geral" aria-label="Visão geral">
                 <div class="cards-resumo">
                     <article class="card card-resumo">
-                        <p class="card-resumo__rotulo">Saldo em Caixa</p>
+                        <p class="card-resumo__rotulo">Previsto do Mês</p>
                         <strong class="card-resumo__valor" data-valor="saldo">—</strong>
-                        <span class="selo selo--positivo" data-variacao="saldo">—</span>
+                        <span class="selo selo--neutro" data-variacao="saldo">—</span>
                     </article>
 
                     <article class="card card-resumo card-resumo--receita">
-                        <p class="card-resumo__rotulo">Receitas do Mês</p>
+                        <p class="card-resumo__rotulo">Recebido no Mês</p>
                         <strong class="card-resumo__valor" data-valor="receitas">—</strong>
                         <span class="selo selo--positivo" data-variacao="receitas">—</span>
                     </article>
@@ -180,6 +180,37 @@
 
             <!-- ===== SEÇÃO: RECEITAS ===== -->
             <section class="secao" id="secao-receitas" aria-label="Receitas">
+
+                <article class="card resumo-saidas margem-baixo" id="card-resumo-receitas">
+                    <div class="resumo-receitas__topo">
+                        <h3 class="tabela__titulo">Recebimentos do mês <small id="resumo-receitas-mes"></small></h3>
+                        <button class="botao botao--fantasma" type="button" id="btn-baixar-resumo">⬇ Baixar resumo (CSV)</button>
+                    </div>
+                    <div class="resumo-saidas__grade">
+                        <div class="resumo-saidas__item resumo-rec__item--previsto">
+                            <span>Previsto</span>
+                            <strong id="rec-previsto">R$ 0,00</strong>
+                            <small>total esperado no mês</small>
+                        </div>
+                        <div class="resumo-saidas__item resumo-rec__item--recebido">
+                            <span>Recebido</span>
+                            <strong id="rec-recebido">R$ 0,00</strong>
+                            <small id="rec-recebido-detalhe">—</small>
+                        </div>
+                        <div class="resumo-saidas__item resumo-rec__item--areceber">
+                            <span>A receber</span>
+                            <strong id="rec-areceber">R$ 0,00</strong>
+                            <small id="rec-areceber-detalhe">—</small>
+                        </div>
+                        <div class="resumo-saidas__item resumo-rec__item--resultado">
+                            <span>Resultado (recebido − saídas)</span>
+                            <strong id="rec-resultado">R$ 0,00</strong>
+                            <small>fechamento do mês</small>
+                        </div>
+                    </div>
+                    <div class="rec-pendentes" id="rec-pendentes"></div>
+                </article>
+
                 <div class="abas" role="tablist">
                     <button class="aba is-ativa" type="button" data-aba="recorrentes">Clientes Recorrentes</button>
                     <button class="aba" type="button" data-aba="unicos">Projetos Únicos</button>
@@ -205,6 +236,7 @@
                                         <th>Recorrência</th>
                                         <th>Faturamento</th>
                                         <th class="alinha-direita">Valor</th>
+                                        <th>Status</th>
                                         <th class="alinha-direita">Ações</th>
                                     </tr>
                                 </thead>
@@ -234,6 +266,7 @@
                                         <th class="alinha-direita">Custos</th>
                                         <th class="alinha-direita">Orçamento</th>
                                         <th>Margem</th>
+                                        <th>Status</th>
                                         <th class="alinha-direita">Ações</th>
                                     </tr>
                                 </thead>
@@ -261,6 +294,7 @@
                                         <th>Descrição</th>
                                         <th>Data</th>
                                         <th class="alinha-direita">Valor</th>
+                                        <th>Status</th>
                                         <th class="alinha-direita">Ações</th>
                                     </tr>
                                 </thead>
@@ -269,7 +303,7 @@
                                     <tr>
                                         <td colspan="3">Total registrado</td>
                                         <td class="alinha-direita valor--receita" id="total-upsells">R$ 0,00</td>
-                                        <td></td>
+                                        <td colspan="2"></td>
                                     </tr>
                                 </tfoot>
                             </table>
