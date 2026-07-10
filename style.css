@@ -560,6 +560,47 @@ select.campo__entrada { appearance: none; cursor: pointer; }
 .resumo-saidas__item--total { border-left-color: var(--despesa); background: rgba(255, 77, 94, 0.06); }
 .resumo-saidas__item--total strong { color: var(--despesa); }
 
+/* Botão de status de pagamento (Receitas) */
+.botao-status {
+    font: inherit;
+    font-size: 0.8rem;
+    font-weight: 600;
+    border: 1px solid var(--linha);
+    border-radius: 8px;
+    padding: 6px 12px;
+    cursor: pointer;
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--texto-suave);
+    transition: all .12s ease;
+    white-space: nowrap;
+}
+.botao-status:hover { color: #fff; border-color: rgba(255, 255, 255, 0.25); }
+.botao-status--pago {
+    color: #0b3d24;
+    background: var(--receita);
+    border-color: transparent;
+}
+.botao-status--pago:hover { color: #0b3d24; filter: brightness(1.05); }
+
+/* Painel de fechamento do mês (Receitas) */
+.resumo-receitas__topo { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.resumo-rec__item--previsto  { border-left-color: var(--primaria); }
+.resumo-rec__item--recebido  { border-left-color: var(--receita); }
+.resumo-rec__item--recebido strong { color: var(--receita); }
+.resumo-rec__item--areceber  { border-left-color: var(--alerta); }
+.resumo-rec__item--resultado { border-left-color: var(--secundaria); }
+
+.rec-pendentes { margin-top: 14px; font-size: 0.82rem; color: var(--texto-suave); }
+.rec-pendentes strong { color: var(--alerta); }
+.rec-pendentes ul { list-style: none; display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.rec-pendentes li {
+    background: rgba(255, 180, 84, 0.1);
+    border: 1px solid rgba(255, 180, 84, 0.3);
+    border-radius: 8px;
+    padding: 4px 10px;
+    color: var(--texto);
+}
+
 /* ============================================================
    CONFIGURAÇÕES
 ============================================================ */
