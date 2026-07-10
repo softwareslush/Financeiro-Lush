@@ -1360,7 +1360,7 @@ function chavePagamento(clienteId, ano, mes) {
     return `${clienteId}:${ano}-${String(mes + 1).padStart(2, '0')}`;
 }
 function clientePagouNoMes(clienteId, ano, mes) {
-    return !!estado.pagamentos[chavePagamento(clienteId, ano, mes)];
+    return !!(estado.pagamentos && estado.pagamentos[chavePagamento(clienteId, ano, mes)]);
 }
 
 // Receitas do mês separando PREVISTO x RECEBIDO (só o que foi marcado como pago)
