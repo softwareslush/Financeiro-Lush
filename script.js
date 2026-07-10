@@ -103,6 +103,7 @@ function estadoInicial() {
         variaveis:     [],
         concluidas:    {},
         mensagens:     {},
+        pagamentos:    {},
         usuarios: [
             { id: uid(), nome: 'Admin', email: ADMIN_EMAIL, senha: SENHA_PADRAO, papel: 'admin' }
         ]
@@ -120,6 +121,7 @@ function normalizarEstado() {
     estado.variaveis      = estado.variaveis      || [];
     estado.concluidas     = estado.concluidas     || {};
     estado.mensagens      = estado.mensagens      || {};
+    estado.pagamentos     = estado.pagamentos     || {};
     estado.usuarios       = estado.usuarios       || [];
 
     // Garante que exista pelo menos o registro do admin
@@ -174,6 +176,7 @@ function salvar() {
     renderizarCarteira();
     atualizarResumoSaidas();
     atualizarResumoGeral();
+    atualizarResumoReceitas();
     if (graficoFluxo)  atualizarGraficoFluxo();
     if (graficoBarras) atualizarGraficoBarras();
     if (graficoRosca)  atualizarGraficoRosca();
@@ -647,21 +650,26 @@ aplicarMascaraCpf(el('colaborador-cpf'));
 function renderizarClientes() {
     const corpo = el('tabela-clientes');
     if (!estado.clientes.length) {
-        corpo.innerHTML = '<tr><td colspan="6" class="tabela__vazia">Nenhum cliente cadastrado. Clique em “+ Novo Cliente” para começar.</td></tr>';
+        corpo.innerHTML = '<tr><td colspan="7" class="tabela__vazia">Nenhum cliente cadastrado. Clique em “+ Novo Cliente” para começar.</td></tr>';
         return;
     }
-    corpo.innerHTML = estado.clientes.map((c) => `
+    const agora = new Date(), ano = agora.getFullYear(), mes = agora.getMonth();
+    corpo.innerHTML = estado.clientes.map((c) => {
+        const pago = clientePagouNoMes(c.id, ano, mes);
+        return `
         <tr>
             <td><strong>${esc(c.empresa)}</strong><br><small class="texto-suave">${esc(c.gestor || 'Gestor não informado')}</small></td>
             <td>${esc(c.cnpj)}</td>
             <td>${esc(c.recorrencia)} · dia ${c.diaCobranca}</td>
             <td>${c.emiteNF ? '<span class="selo selo--positivo">Emite NF</span>' : '<span class="selo selo--neutro">Recibo</span>'}</td>
             <td class="alinha-direita valor--receita">${formatarMoeda(c.valor)}</td>
+            <td><button class="botao-status ${pago ? 'botao-status--pago' : ''}" data-pagar-cliente="${c.id}">${pago ? '✓ Pago' : 'Marcar pago'}</button></td>
             <td class="alinha-direita">
                 <button class="botao-icone" data-editar-cliente="${c.id}">Ficha</button>
                 <button class="botao-icone botao-icone--perigo" data-excluir-cliente="${c.id}" title="Excluir">✕</button>
             </td>
-        </tr>`).join('');
+        </tr>`;
+    }).join('');
 }
 
 function abrirFichaCliente(id) {
@@ -698,6 +706,14 @@ el('botao-novo-cliente').addEventListener('click', () => abrirFichaCliente(null)
 el('tabela-clientes').addEventListener('click', (e) => {
     const editar  = e.target.closest('[data-editar-cliente]');
     const excluir = e.target.closest('[data-excluir-cliente]');
+    const pagar   = e.target.closest('[data-pagar-cliente]');
+    if (pagar) {
+        const agora = new Date();
+        const chave = chavePagamento(pagar.dataset.pagarCliente, agora.getFullYear(), agora.getMonth());
+        if (estado.pagamentos[chave]) delete estado.pagamentos[chave]; else estado.pagamentos[chave] = true;
+        salvar();
+        renderizarClientes();
+    }
     if (editar) abrirFichaCliente(editar.dataset.editarCliente);
     if (excluir && confirm('Excluir este cliente, seus lembretes e orientações?')) {
         estado.clientes = estado.clientes.filter((c) => c.id !== excluir.dataset.excluirCliente);
@@ -777,7 +793,7 @@ el('projeto-valor').addEventListener('input', atualizarCalculoProjeto);
 function renderizarProjetos() {
     const corpo = el('tabela-projetos');
     if (!estado.projetos.length) {
-        corpo.innerHTML = '<tr><td colspan="7" class="tabela__vazia">Nenhum projeto registrado. Clique em “+ Novo Projeto” para começar.</td></tr>';
+        corpo.innerHTML = '<tr><td colspan="8" class="tabela__vazia">Nenhum projeto registrado. Clique em “+ Novo Projeto” para começar.</td></tr>';
         return;
     }
     corpo.innerHTML = estado.projetos.map((p) => {
@@ -793,6 +809,7 @@ function renderizarProjetos() {
             <td class="alinha-direita valor--despesa">${formatarMoeda(p.custo)}</td>
             <td class="alinha-direita valor--receita">${formatarMoeda(p.valor)}</td>
             <td>${selo}</td>
+            <td><button class="botao-status ${p.pago ? 'botao-status--pago' : ''}" data-pagar-projeto="${p.id}">${p.pago ? '✓ Pago' : 'Marcar pago'}</button></td>
             <td class="alinha-direita">
                 <button class="botao-icone" data-editar-projeto="${p.id}">Ficha</button>
                 <button class="botao-icone botao-icone--perigo" data-excluir-projeto="${p.id}" title="Excluir">✕</button>
@@ -829,6 +846,11 @@ el('botao-novo-projeto').addEventListener('click', () => abrirFichaProjeto(null)
 el('tabela-projetos').addEventListener('click', (e) => {
     const editar  = e.target.closest('[data-editar-projeto]');
     const excluir = e.target.closest('[data-excluir-projeto]');
+    const pagar   = e.target.closest('[data-pagar-projeto]');
+    if (pagar) {
+        const projeto = estado.projetos.find((p) => p.id === pagar.dataset.pagarProjeto);
+        if (projeto) { projeto.pago = !projeto.pago; salvar(); renderizarProjetos(); }
+    }
     if (editar) abrirFichaProjeto(editar.dataset.editarProjeto);
     if (excluir && confirm('Excluir este projeto?')) {
         estado.projetos = estado.projetos.filter((p) => p.id !== excluir.dataset.excluirProjeto);
@@ -877,7 +899,7 @@ el('form-projeto').addEventListener('submit', (e) => {
 function renderizarUpsells() {
     const corpo = el('tabela-upsells');
     if (!estado.upsells.length) {
-        corpo.innerHTML = '<tr><td colspan="5" class="tabela__vazia">Nenhum upsell registrado ainda.</td></tr>';
+        corpo.innerHTML = '<tr><td colspan="6" class="tabela__vazia">Nenhum upsell registrado ainda.</td></tr>';
     } else {
         corpo.innerHTML = estado.upsells.map((u) => `
             <tr>
@@ -885,6 +907,7 @@ function renderizarUpsells() {
                 <td>${esc(u.descricao)}</td>
                 <td>${formatarDataISO(u.data)}</td>
                 <td class="alinha-direita valor--receita">${formatarMoeda(u.valor)}</td>
+                <td><button class="botao-status ${u.pago ? 'botao-status--pago' : ''}" data-pagar-upsell="${u.id}">${u.pago ? '✓ Pago' : 'Marcar pago'}</button></td>
                 <td class="alinha-direita">
                     <button class="botao-icone botao-icone--perigo" data-excluir-upsell="${u.id}" title="Excluir">✕</button>
                 </td>
@@ -905,6 +928,11 @@ el('botao-novo-upsell').addEventListener('click', () => {
 
 el('tabela-upsells').addEventListener('click', (e) => {
     const excluir = e.target.closest('[data-excluir-upsell]');
+    const pagar   = e.target.closest('[data-pagar-upsell]');
+    if (pagar) {
+        const upsell = estado.upsells.find((u) => u.id === pagar.dataset.pagarUpsell);
+        if (upsell) { upsell.pago = !upsell.pago; salvar(); renderizarUpsells(); }
+    }
     if (excluir && confirm('Excluir este upsell?')) {
         estado.upsells = estado.upsells.filter((u) => u.id !== excluir.dataset.excluirUpsell);
         salvar();
@@ -1327,13 +1355,47 @@ function clienteFaturaNoMes(c, ano, mes) {
     return meses >= 0 && meses % passo === 0;
 }
 
+// Marcação de pagamento por cliente e por mês (ex.: "id:2026-07")
+function chavePagamento(clienteId, ano, mes) {
+    return `${clienteId}:${ano}-${String(mes + 1).padStart(2, '0')}`;
+}
+function clientePagouNoMes(clienteId, ano, mes) {
+    return !!estado.pagamentos[chavePagamento(clienteId, ano, mes)];
+}
+
+// Receitas do mês separando PREVISTO x RECEBIDO (só o que foi marcado como pago)
+function receitasDoMes(ano, mes) {
+    const prefixo = `${ano}-${String(mes + 1).padStart(2, '0')}`;
+    let previsto = 0, recebido = 0;
+    const pendentes = [];
+    const itens = [];
+
+    estado.clientes.forEach((c) => {
+        if (!clienteFaturaNoMes(c, ano, mes)) return;
+        const pago = clientePagouNoMes(c.id, ano, mes);
+        previsto += c.valor;
+        if (pago) recebido += c.valor; else pendentes.push({ nome: c.empresa, valor: c.valor });
+        itens.push({ tipo: 'Recorrente', nome: c.empresa, valor: c.valor, pago });
+    });
+    estado.projetos.forEach((p) => {
+        if (!(p.entrega || '').startsWith(prefixo)) return;
+        previsto += p.valor;
+        if (p.pago) recebido += p.valor; else pendentes.push({ nome: `${p.empresa} (projeto)`, valor: p.valor });
+        itens.push({ tipo: 'Projeto', nome: `${p.empresa} — ${p.servico}`, valor: p.valor, pago: !!p.pago });
+    });
+    estado.upsells.forEach((u) => {
+        if (!(u.data || '').startsWith(prefixo)) return;
+        previsto += u.valor;
+        if (u.pago) recebido += u.valor; else pendentes.push({ nome: `${u.cliente} (upsell)`, valor: u.valor });
+        itens.push({ tipo: 'Upsell', nome: `${u.cliente} — ${u.descricao}`, valor: u.valor, pago: !!u.pago });
+    });
+
+    return { previsto, recebido, aReceber: previsto - recebido, pendentes, itens };
+}
+
 function totaisDoMes(ano, mes) {
     const prefixo = `${ano}-${String(mes + 1).padStart(2, '0')}`;
-    let entradas = 0, nEntradas = 0;
-
-    estado.clientes.forEach((c) => { if (clienteFaturaNoMes(c, ano, mes)) { entradas += c.valor; nEntradas++; } });
-    estado.projetos.forEach((p) => { if ((p.entrega || '').startsWith(prefixo)) { entradas += p.valor; nEntradas++; } });
-    estado.upsells.forEach((u)  => { if ((u.data    || '').startsWith(prefixo)) { entradas += u.valor; nEntradas++; } });
+    const rec = receitasDoMes(ano, mes);
 
     const fixas     = estado.fixas.reduce((s, f) => s + f.valor, 0);
     const equipe    = estado.colaboradores.reduce((s, c) => s + c.valor, 0);
@@ -1342,7 +1404,9 @@ function totaisDoMes(ano, mes) {
     const saidas    = fixas + equipe + totalVar;
     const nSaidas   = estado.fixas.length + estado.colaboradores.length + variaveis.length;
 
-    return { entradas, saidas, nEntradas, nSaidas };
+    // "entradas" nos gráficos = apenas o que foi RECEBIDO (pago)
+    const nEntradas = rec.itens.filter((i) => i.pago).length;
+    return { entradas: rec.recebido, saidas, nEntradas, nSaidas };
 }
 
 
@@ -1368,17 +1432,74 @@ function definirCard(chave, valor, texto, tipo) {
 function atualizarResumoGeral() {
     if (!estado) return;
     const agora = new Date();
-    const { entradas, saidas, nEntradas, nSaidas } = totaisDoMes(agora.getFullYear(), agora.getMonth());
-    const resultado = entradas - saidas;
+    const ano = agora.getFullYear(), mes = agora.getMonth();
+    const rec = receitasDoMes(ano, mes);
+    const { saidas, nSaidas } = totaisDoMes(ano, mes);
+    const resultado = rec.recebido - saidas;
+    const pct = rec.previsto > 0 ? Math.round((rec.recebido / rec.previsto) * 100) : 0;
 
-    const fluxo = dadosFluxoCaixa();
-    const saldoProjetado = fluxo.saldo.length ? fluxo.saldo[fluxo.saldo.length - 1] : resultado;
-
-    definirCard('saldo',     saldoProjetado, 'projeção p/ fim do mês', saldoProjetado >= 0 ? 'positivo' : 'negativo');
-    definirCard('receitas',  entradas,       `${nEntradas} entrada(s) no mês`, 'positivo');
-    definirCard('despesas',  saidas,         `${nSaidas} saída(s) no mês`, 'negativo');
-    definirCard('resultado', resultado,      'receitas − despesas', resultado >= 0 ? 'positivo' : 'negativo');
+    definirCard('saldo',     rec.previsto, `${pct}% já recebido`, 'neutro');
+    definirCard('receitas',  rec.recebido, rec.aReceber > 0 ? `${formatarMoeda(rec.aReceber)} a receber` : 'tudo recebido ✓', 'positivo');
+    definirCard('despesas',  saidas,       `${nSaidas} saída(s) no mês`, 'negativo');
+    definirCard('resultado', resultado,    'recebido − despesas', resultado >= 0 ? 'positivo' : 'negativo');
 }
+
+// Painel de fechamento do mês (aba Receitas)
+function atualizarResumoReceitas() {
+    if (!estado) return;
+    const agora = new Date();
+    const rec = receitasDoMes(agora.getFullYear(), agora.getMonth());
+    const { saidas } = totaisDoMes(agora.getFullYear(), agora.getMonth());
+    const mesNome = agora.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+    const pct = rec.previsto > 0 ? Math.round((rec.recebido / rec.previsto) * 100) : 0;
+
+    el('resumo-receitas-mes').textContent      = mesNome.charAt(0).toUpperCase() + mesNome.slice(1);
+    el('rec-previsto').textContent             = formatarMoeda(rec.previsto);
+    el('rec-recebido').textContent             = formatarMoeda(rec.recebido);
+    el('rec-recebido-detalhe').textContent     = `${pct}% do previsto`;
+    el('rec-areceber').textContent             = formatarMoeda(rec.aReceber);
+    el('rec-areceber-detalhe').textContent     = `${rec.pendentes.length} pendente(s)`;
+    el('rec-resultado').textContent            = formatarMoeda(rec.recebido - saidas);
+
+    el('rec-pendentes').innerHTML = rec.pendentes.length
+        ? `<strong>Ainda não pagaram:</strong><ul>${rec.pendentes.map((p) => `<li>${esc(p.nome)} · ${formatarMoeda(p.valor)}</li>`).join('')}</ul>`
+        : (rec.previsto > 0 ? '<strong>Tudo recebido neste mês ✓</strong>' : '<span>Cadastre clientes e receitas para acompanhar os recebimentos aqui.</span>');
+}
+
+// Baixa o fechamento do mês em CSV (abre no Excel) para o usuário guardar
+function baixarResumoMes() {
+    const agora = new Date();
+    const rec = receitasDoMes(agora.getFullYear(), agora.getMonth());
+    const { saidas } = totaisDoMes(agora.getFullYear(), agora.getMonth());
+    const mesNome = agora.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+    const q = (s) => `"${String(s).replace(/"/g, '""')}"`;
+
+    const linhas = [];
+    linhas.push(`LUSH. Finance - Fechamento de ${mesNome}`);
+    linhas.push('');
+    linhas.push(['Tipo', 'Descrição', 'Valor', 'Status'].map(q).join(';'));
+    rec.itens.forEach((i) =>
+        linhas.push([i.tipo, i.nome, formatarMoeda(i.valor), i.pago ? 'Pago' : 'Pendente'].map(q).join(';')));
+    linhas.push('');
+    linhas.push(['Total previsto',                   formatarMoeda(rec.previsto)].map(q).join(';'));
+    linhas.push(['Total recebido',                   formatarMoeda(rec.recebido)].map(q).join(';'));
+    linhas.push(['A receber',                        formatarMoeda(rec.aReceber)].map(q).join(';'));
+    linhas.push(['Despesas do mês',                  formatarMoeda(saidas)].map(q).join(';'));
+    linhas.push(['Resultado (recebido - despesas)',  formatarMoeda(rec.recebido - saidas)].map(q).join(';'));
+
+    const csv  = '\ufeff' + linhas.join('\r\n'); // BOM para acentos no Excel
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href = url;
+    a.download = `lush-fechamento-${agora.getFullYear()}-${String(agora.getMonth() + 1).padStart(2, '0')}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+}
+
+el('btn-baixar-resumo').addEventListener('click', baixarResumoMes);
 
 function atualizarResumoSaidas() {
     const mesAtual = hojeISO().slice(0, 7);
@@ -1542,9 +1663,9 @@ function dadosFluxoCaixa() {
         return (d.getFullYear() === ano && d.getMonth() === mes) ? d.getDate() : null;
     };
 
-    estado.clientes.forEach((c) => { if (clienteFaturaNoMes(c, ano, mes)) somaNoDia(entradas, c.diaCobranca, c.valor); });
-    estado.projetos.forEach((p) => { const dia = diaNoMesAtual(p.entrega); if (dia) somaNoDia(entradas, dia, p.valor); });
-    estado.upsells.forEach((u)  => { const dia = diaNoMesAtual(u.data);    if (dia) somaNoDia(entradas, dia, u.valor); });
+    estado.clientes.forEach((c) => { if (clienteFaturaNoMes(c, ano, mes) && clientePagouNoMes(c.id, ano, mes)) somaNoDia(entradas, c.diaCobranca, c.valor); });
+    estado.projetos.forEach((p) => { const dia = diaNoMesAtual(p.entrega); if (dia && p.pago) somaNoDia(entradas, dia, p.valor); });
+    estado.upsells.forEach((u)  => { const dia = diaNoMesAtual(u.data);    if (dia && u.pago) somaNoDia(entradas, dia, u.valor); });
 
     estado.fixas.forEach((f) => somaNoDia(saidas, f.diaVencimento, f.valor));
     estado.colaboradores.forEach((c) => somaNoDia(saidas, c.diaPagamento, c.valor));
@@ -1625,6 +1746,7 @@ function renderTudo() {
     renderizarVariaveis();
     atualizarResumoSaidas();
     atualizarResumoGeral();
+    atualizarResumoReceitas();
     atualizarNotificacoes();
 }
 
