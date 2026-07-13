@@ -12,7 +12,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
 
     <!-- Estilos do sistema -->
-    <link rel="stylesheet" href="style.css?v=2">
+    <link rel="stylesheet" href="style.css?v=3">
 
     <!-- Supabase (banco de dados + login) via CDN -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
@@ -22,7 +22,7 @@
 
     <!-- Suas chaves do Supabase (edite o config.js) + script do sistema -->
     <script src="config.js" defer></script>
-    <script src="script.js?v=2" defer></script>
+    <script src="script.js?v=3" defer></script>
 </head>
 <body>
 
@@ -355,6 +355,7 @@
                                         <th>Categoria</th>
                                         <th>Vencimento</th>
                                         <th class="alinha-direita">Valor</th>
+                                        <th>Status</th>
                                         <th class="alinha-direita">Ações</th>
                                     </tr>
                                 </thead>
@@ -384,6 +385,7 @@
                                         <th>Chave PIX</th>
                                         <th>Pagamento</th>
                                         <th class="alinha-direita">Valor</th>
+                                        <th>Status</th>
                                         <th class="alinha-direita">Ações</th>
                                     </tr>
                                 </thead>
@@ -411,6 +413,7 @@
                                         <th>Categoria</th>
                                         <th>Data</th>
                                         <th class="alinha-direita">Valor</th>
+                                        <th>Status</th>
                                         <th class="alinha-direita">Ações</th>
                                     </tr>
                                 </thead>
@@ -443,6 +446,16 @@
                             <span>Total de saídas do mês</span>
                             <strong id="resumo-total">R$ 0,00</strong>
                             <small>fixas + colaboradores + variáveis</small>
+                        </div>
+                        <div class="resumo-saidas__item resumo-rec__item--recebido">
+                            <span>Já pago</span>
+                            <strong id="resumo-pago">R$ 0,00</strong>
+                            <small id="resumo-pago-detalhe">—</small>
+                        </div>
+                        <div class="resumo-saidas__item resumo-rec__item--areceber">
+                            <span>A pagar</span>
+                            <strong id="resumo-apagar">R$ 0,00</strong>
+                            <small id="resumo-apagar-detalhe">—</small>
                         </div>
                     </div>
                 </article>
