@@ -1146,20 +1146,25 @@ function notificarDesktop(quantidade) {
 function renderizarFixas() {
     const corpo = el('tabela-fixas');
     if (!estado.fixas.length) {
-        corpo.innerHTML = '<tr><td colspan="5" class="tabela__vazia">Nenhuma despesa fixa cadastrada. Clique em “+ Nova Despesa Fixa”.</td></tr>';
+        corpo.innerHTML = '<tr><td colspan="6" class="tabela__vazia">Nenhuma despesa fixa cadastrada. Clique em “+ Nova Despesa Fixa”.</td></tr>';
         return;
     }
-    corpo.innerHTML = estado.fixas.map((f) => `
+    const agora = new Date(), ano = agora.getFullYear(), mes = agora.getMonth();
+    corpo.innerHTML = estado.fixas.map((f) => {
+        const pago = despesaPagaNoMes(f.id, ano, mes);
+        return `
         <tr>
             <td><strong>${esc(f.descricao)}</strong></td>
             <td>${esc(f.categoria)}</td>
             <td>Todo dia ${f.diaVencimento}</td>
             <td class="alinha-direita valor--despesa">${formatarMoeda(f.valor)}</td>
+            <td><button class="botao-status ${pago ? 'botao-status--pago' : ''}" data-pagar-fixa="${f.id}">${pago ? '✓ Pago' : 'Marcar pago'}</button></td>
             <td class="alinha-direita">
                 <button class="botao-icone" data-editar-fixa="${f.id}">Editar</button>
                 <button class="botao-icone botao-icone--perigo" data-excluir-fixa="${f.id}" title="Excluir">✕</button>
             </td>
-        </tr>`).join('');
+        </tr>`;
+    }).join('');
 }
 
 function abrirFichaFixa(id) {
@@ -1179,6 +1184,8 @@ el('botao-nova-fixa').addEventListener('click', () => abrirFichaFixa(null));
 el('tabela-fixas').addEventListener('click', (e) => {
     const editar  = e.target.closest('[data-editar-fixa]');
     const excluir = e.target.closest('[data-excluir-fixa]');
+    const pagar   = e.target.closest('[data-pagar-fixa]');
+    if (pagar) { alternarPagamentoMensal(pagar.dataset.pagarFixa); salvar(); renderizarFixas(); }
     if (editar) abrirFichaFixa(editar.dataset.editarFixa);
     if (excluir && confirm('Excluir esta despesa fixa?')) {
         estado.fixas = estado.fixas.filter((f) => f.id !== excluir.dataset.excluirFixa);
@@ -1211,10 +1218,13 @@ el('form-fixa').addEventListener('submit', (e) => {
 function renderizarColaboradores() {
     const corpo = el('tabela-colaboradores');
     if (!estado.colaboradores.length) {
-        corpo.innerHTML = '<tr><td colspan="7" class="tabela__vazia">Nenhum colaborador cadastrado. Clique em “+ Novo Colaborador”.</td></tr>';
+        corpo.innerHTML = '<tr><td colspan="8" class="tabela__vazia">Nenhum colaborador cadastrado. Clique em “+ Novo Colaborador”.</td></tr>';
         return;
     }
-    corpo.innerHTML = estado.colaboradores.map((c) => `
+    const agora = new Date(), ano = agora.getFullYear(), mes = agora.getMonth();
+    corpo.innerHTML = estado.colaboradores.map((c) => {
+        const pago = despesaPagaNoMes(c.id, ano, mes);
+        return `
         <tr>
             <td><strong>${esc(c.nome)}</strong><br><small class="texto-suave">${esc(c.funcao || 'Função não informada')}</small></td>
             <td>${esc(c.contato)}</td>
@@ -1222,11 +1232,13 @@ function renderizarColaboradores() {
             <td>${esc(c.chavePix)}</td>
             <td>Todo dia ${c.diaPagamento}</td>
             <td class="alinha-direita valor--despesa">${formatarMoeda(c.valor)}</td>
+            <td><button class="botao-status ${pago ? 'botao-status--pago' : ''}" data-pagar-colaborador="${c.id}">${pago ? '✓ Pago' : 'Marcar pago'}</button></td>
             <td class="alinha-direita">
                 <button class="botao-icone" data-editar-colaborador="${c.id}">Ficha</button>
                 <button class="botao-icone botao-icone--perigo" data-excluir-colaborador="${c.id}" title="Excluir">✕</button>
             </td>
-        </tr>`).join('');
+        </tr>`;
+    }).join('');
 }
 
 function abrirFichaColaborador(id) {
@@ -1249,6 +1261,8 @@ el('botao-novo-colaborador').addEventListener('click', () => abrirFichaColaborad
 el('tabela-colaboradores').addEventListener('click', (e) => {
     const editar  = e.target.closest('[data-editar-colaborador]');
     const excluir = e.target.closest('[data-excluir-colaborador]');
+    const pagar   = e.target.closest('[data-pagar-colaborador]');
+    if (pagar) { alternarPagamentoMensal(pagar.dataset.pagarColaborador); salvar(); renderizarColaboradores(); }
     if (editar) abrirFichaColaborador(editar.dataset.editarColaborador);
     if (excluir && confirm('Excluir este colaborador?')) {
         estado.colaboradores = estado.colaboradores.filter((c) => c.id !== excluir.dataset.excluirColaborador);
@@ -1284,7 +1298,7 @@ el('form-colaborador').addEventListener('submit', (e) => {
 function renderizarVariaveis() {
     const corpo = el('tabela-variaveis');
     if (!estado.variaveis.length) {
-        corpo.innerHTML = '<tr><td colspan="5" class="tabela__vazia">Nenhuma despesa variável registrada.</td></tr>';
+        corpo.innerHTML = '<tr><td colspan="6" class="tabela__vazia">Nenhuma despesa variável registrada.</td></tr>';
         return;
     }
     const ordenadas = [...estado.variaveis].sort((a, b) => (b.data || '').localeCompare(a.data || ''));
@@ -1294,6 +1308,7 @@ function renderizarVariaveis() {
             <td>${esc(v.categoria)}</td>
             <td>${formatarDataISO(v.data)}</td>
             <td class="alinha-direita valor--despesa">${formatarMoeda(v.valor)}</td>
+            <td><button class="botao-status ${v.pago ? 'botao-status--pago' : ''}" data-pagar-variavel="${v.id}">${v.pago ? '✓ Pago' : 'Marcar pago'}</button></td>
             <td class="alinha-direita">
                 <button class="botao-icone" data-editar-variavel="${v.id}">Editar</button>
                 <button class="botao-icone botao-icone--perigo" data-excluir-variavel="${v.id}" title="Excluir">✕</button>
@@ -1318,6 +1333,11 @@ el('botao-nova-variavel').addEventListener('click', () => abrirFichaVariavel(nul
 el('tabela-variaveis').addEventListener('click', (e) => {
     const editar  = e.target.closest('[data-editar-variavel]');
     const excluir = e.target.closest('[data-excluir-variavel]');
+    const pagar   = e.target.closest('[data-pagar-variavel]');
+    if (pagar) {
+        const despesa = estado.variaveis.find((v) => v.id === pagar.dataset.pagarVariavel);
+        if (despesa) { despesa.pago = !despesa.pago; salvar(); renderizarVariaveis(); }
+    }
     if (editar) abrirFichaVariavel(editar.dataset.editarVariavel);
     if (excluir && confirm('Excluir esta despesa variável?')) {
         estado.variaveis = estado.variaveis.filter((v) => v.id !== excluir.dataset.excluirVariavel);
@@ -1363,6 +1383,45 @@ function clientePagouNoMes(clienteId, ano, mes) {
     return !!(estado.pagamentos && estado.pagamentos[chavePagamento(clienteId, ano, mes)]);
 }
 
+// Saídas recorrentes (fixas e colaboradores) também são marcadas por mês.
+function despesaPagaNoMes(itemId, ano, mes) {
+    return !!(estado.pagamentos && estado.pagamentos[chavePagamento(itemId, ano, mes)]);
+}
+function alternarPagamentoMensal(itemId) {
+    const agora = new Date();
+    const chave = chavePagamento(itemId, agora.getFullYear(), agora.getMonth());
+    if (estado.pagamentos[chave]) delete estado.pagamentos[chave];
+    else estado.pagamentos[chave] = true;
+}
+
+// Totais de saídas do mês separando PAGO x A PAGAR
+function saidasDoMes(ano, mes) {
+    const prefixo = `${ano}-${String(mes + 1).padStart(2, '0')}`;
+    let total = 0, pago = 0;
+    const pendentes = [];
+    const itens = [];
+
+    estado.fixas.forEach((f) => {
+        const foiPago = despesaPagaNoMes(f.id, ano, mes);
+        total += f.valor;
+        if (foiPago) pago += f.valor; else pendentes.push({ nome: f.descricao, valor: f.valor });
+        itens.push({ tipo: 'Despesa fixa', nome: f.descricao, valor: f.valor, pago: foiPago });
+    });
+    estado.colaboradores.forEach((c) => {
+        const foiPago = despesaPagaNoMes(c.id, ano, mes);
+        total += c.valor;
+        if (foiPago) pago += c.valor; else pendentes.push({ nome: c.nome, valor: c.valor });
+        itens.push({ tipo: 'Colaborador', nome: c.nome, valor: c.valor, pago: foiPago });
+    });
+    estado.variaveis.filter((v) => (v.data || '').startsWith(prefixo)).forEach((v) => {
+        total += v.valor;
+        if (v.pago) pago += v.valor; else pendentes.push({ nome: v.descricao, valor: v.valor });
+        itens.push({ tipo: 'Despesa variável', nome: v.descricao, valor: v.valor, pago: !!v.pago });
+    });
+
+    return { total, pago, aPagar: total - pago, pendentes, itens };
+}
+
 // Receitas do mês separando PREVISTO x RECEBIDO (só o que foi marcado como pago)
 function receitasDoMes(ano, mes) {
     const prefixo = `${ano}-${String(mes + 1).padStart(2, '0')}`;
@@ -1394,19 +1453,18 @@ function receitasDoMes(ano, mes) {
 }
 
 function totaisDoMes(ano, mes) {
-    const prefixo = `${ano}-${String(mes + 1).padStart(2, '0')}`;
     const rec = receitasDoMes(ano, mes);
+    const sai = saidasDoMes(ano, mes);
 
-    const fixas     = estado.fixas.reduce((s, f) => s + f.valor, 0);
-    const equipe    = estado.colaboradores.reduce((s, c) => s + c.valor, 0);
-    const variaveis = estado.variaveis.filter((v) => (v.data || '').startsWith(prefixo));
-    const totalVar  = variaveis.reduce((s, v) => s + v.valor, 0);
-    const saidas    = fixas + equipe + totalVar;
-    const nSaidas   = estado.fixas.length + estado.colaboradores.length + variaveis.length;
-
-    // "entradas" nos gráficos = apenas o que foi RECEBIDO (pago)
-    const nEntradas = rec.itens.filter((i) => i.pago).length;
-    return { entradas: rec.recebido, saidas, nEntradas, nSaidas };
+    // Nos gráficos e no resultado contam apenas os valores REALIZADOS
+    // (receitas recebidas e despesas efetivamente pagas).
+    return {
+        entradas:  rec.recebido,
+        saidas:    sai.pago,
+        nEntradas: rec.itens.filter((i) => i.pago).length,
+        nSaidas:   sai.itens.filter((i) => i.pago).length,
+        saidasPrevistas: sai.total
+    };
 }
 
 
@@ -1434,14 +1492,14 @@ function atualizarResumoGeral() {
     const agora = new Date();
     const ano = agora.getFullYear(), mes = agora.getMonth();
     const rec = receitasDoMes(ano, mes);
-    const { saidas, nSaidas } = totaisDoMes(ano, mes);
-    const resultado = rec.recebido - saidas;
+    const sai = saidasDoMes(ano, mes);
+    const resultado = rec.recebido - sai.pago;
     const pct = rec.previsto > 0 ? Math.round((rec.recebido / rec.previsto) * 100) : 0;
 
     definirCard('saldo',     rec.previsto, `${pct}% já recebido`, 'neutro');
     definirCard('receitas',  rec.recebido, rec.aReceber > 0 ? `${formatarMoeda(rec.aReceber)} a receber` : 'tudo recebido ✓', 'positivo');
-    definirCard('despesas',  saidas,       `${nSaidas} saída(s) no mês`, 'negativo');
-    definirCard('resultado', resultado,    'recebido − despesas', resultado >= 0 ? 'positivo' : 'negativo');
+    definirCard('despesas',  sai.pago,     sai.aPagar > 0 ? `${formatarMoeda(sai.aPagar)} a pagar` : 'tudo pago ✓', 'negativo');
+    definirCard('resultado', resultado,    'recebido − pago', resultado >= 0 ? 'positivo' : 'negativo');
 }
 
 // Painel de fechamento do mês (aba Receitas)
@@ -1469,30 +1527,40 @@ function atualizarResumoReceitas() {
 // Baixa o fechamento do mês em CSV (abre no Excel) para o usuário guardar
 function baixarResumoMes() {
     const agora = new Date();
-    const rec = receitasDoMes(agora.getFullYear(), agora.getMonth());
-    const { saidas } = totaisDoMes(agora.getFullYear(), agora.getMonth());
+    const ano = agora.getFullYear(), mes = agora.getMonth();
+    const rec = receitasDoMes(ano, mes);
+    const sai = saidasDoMes(ano, mes);
     const mesNome = agora.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
     const q = (s) => `"${String(s).replace(/"/g, '""')}"`;
 
     const linhas = [];
     linhas.push(`LUSH. Finance - Fechamento de ${mesNome}`);
     linhas.push('');
+    linhas.push('RECEITAS');
     linhas.push(['Tipo', 'Descrição', 'Valor', 'Status'].map(q).join(';'));
     rec.itens.forEach((i) =>
+        linhas.push([i.tipo, i.nome, formatarMoeda(i.valor), i.pago ? 'Recebido' : 'Pendente'].map(q).join(';')));
+    linhas.push('');
+    linhas.push('DESPESAS');
+    linhas.push(['Tipo', 'Descrição', 'Valor', 'Status'].map(q).join(';'));
+    sai.itens.forEach((i) =>
         linhas.push([i.tipo, i.nome, formatarMoeda(i.valor), i.pago ? 'Pago' : 'Pendente'].map(q).join(';')));
     linhas.push('');
-    linhas.push(['Total previsto',                   formatarMoeda(rec.previsto)].map(q).join(';'));
-    linhas.push(['Total recebido',                   formatarMoeda(rec.recebido)].map(q).join(';'));
+    linhas.push('RESUMO');
+    linhas.push(['Receita prevista',                 formatarMoeda(rec.previsto)].map(q).join(';'));
+    linhas.push(['Receita recebida',                 formatarMoeda(rec.recebido)].map(q).join(';'));
     linhas.push(['A receber',                        formatarMoeda(rec.aReceber)].map(q).join(';'));
-    linhas.push(['Despesas do mês',                  formatarMoeda(saidas)].map(q).join(';'));
-    linhas.push(['Resultado (recebido - despesas)',  formatarMoeda(rec.recebido - saidas)].map(q).join(';'));
+    linhas.push(['Despesa prevista',                 formatarMoeda(sai.total)].map(q).join(';'));
+    linhas.push(['Despesa paga',                     formatarMoeda(sai.pago)].map(q).join(';'));
+    linhas.push(['A pagar',                          formatarMoeda(sai.aPagar)].map(q).join(';'));
+    linhas.push(['Resultado (recebido - pago)',      formatarMoeda(rec.recebido - sai.pago)].map(q).join(';'));
 
     const csv  = '\ufeff' + linhas.join('\r\n'); // BOM para acentos no Excel
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const url  = URL.createObjectURL(blob);
     const a    = document.createElement('a');
     a.href = url;
-    a.download = `lush-fechamento-${agora.getFullYear()}-${String(agora.getMonth() + 1).padStart(2, '0')}.csv`;
+    a.download = `lush-fechamento-${ano}-${String(mes + 1).padStart(2, '0')}.csv`;
     document.body.appendChild(a);
     a.click();
     a.remove();
@@ -1502,6 +1570,7 @@ function baixarResumoMes() {
 el('btn-baixar-resumo').addEventListener('click', baixarResumoMes);
 
 function atualizarResumoSaidas() {
+    const agora = new Date(), ano = agora.getFullYear(), mes = agora.getMonth();
     const mesAtual = hojeISO().slice(0, 7);
     const totalFixas     = estado.fixas.reduce((soma, f) => soma + f.valor, 0);
     const totalEquipe    = estado.colaboradores.reduce((soma, c) => soma + c.valor, 0);
@@ -1517,6 +1586,14 @@ function atualizarResumoSaidas() {
     el('resumo-variaveis').textContent         = formatarMoeda(totalVariaveis);
     el('resumo-variaveis-detalhe').textContent = `${variaveisMes.length} lançamento(s) no mês · ${pct(totalVariaveis)}`;
     el('resumo-total').textContent = formatarMoeda(total);
+
+    // Pago x a pagar
+    const s = saidasDoMes(ano, mes);
+    const pctPago = s.total > 0 ? Math.round((s.pago / s.total) * 100) : 0;
+    el('resumo-pago').textContent           = formatarMoeda(s.pago);
+    el('resumo-pago-detalhe').textContent   = `${pctPago}% do total`;
+    el('resumo-apagar').textContent         = formatarMoeda(s.aPagar);
+    el('resumo-apagar-detalhe').textContent = `${s.pendentes.length} pendente(s)`;
 }
 
 
@@ -1546,14 +1623,21 @@ function serieSeisMeses() {
     return { meses, entradas, saidas };
 }
 
-// Despesas do mês agrupadas por categoria (para a rosca)
+// Despesas PAGAS do mês agrupadas por categoria (para a rosca)
 function despesasPorCategoriaMes() {
+    const agora = new Date(), ano = agora.getFullYear(), mes = agora.getMonth();
     const mesAtual = hojeISO().slice(0, 7);
     const mapa = {};
-    estado.fixas.forEach((f) => { mapa[f.categoria] = (mapa[f.categoria] || 0) + f.valor; });
-    estado.variaveis.filter((v) => (v.data || '').startsWith(mesAtual))
+
+    estado.fixas.forEach((f) => {
+        if (despesaPagaNoMes(f.id, ano, mes)) mapa[f.categoria] = (mapa[f.categoria] || 0) + f.valor;
+    });
+    estado.variaveis.filter((v) => (v.data || '').startsWith(mesAtual) && v.pago)
         .forEach((v) => { mapa[v.categoria] = (mapa[v.categoria] || 0) + v.valor; });
-    const equipe = estado.colaboradores.reduce((s, c) => s + c.valor, 0);
+
+    const equipe = estado.colaboradores
+        .filter((c) => despesaPagaNoMes(c.id, ano, mes))
+        .reduce((s, c) => s + c.valor, 0);
     if (equipe > 0) mapa['Equipe & Freelas'] = (mapa['Equipe & Freelas'] || 0) + equipe;
 
     const categorias = Object.keys(mapa);
@@ -1667,9 +1751,9 @@ function dadosFluxoCaixa() {
     estado.projetos.forEach((p) => { const dia = diaNoMesAtual(p.entrega); if (dia && p.pago) somaNoDia(entradas, dia, p.valor); });
     estado.upsells.forEach((u)  => { const dia = diaNoMesAtual(u.data);    if (dia && u.pago) somaNoDia(entradas, dia, u.valor); });
 
-    estado.fixas.forEach((f) => somaNoDia(saidas, f.diaVencimento, f.valor));
-    estado.colaboradores.forEach((c) => somaNoDia(saidas, c.diaPagamento, c.valor));
-    estado.variaveis.forEach((v) => { const dia = diaNoMesAtual(v.data); if (dia) somaNoDia(saidas, dia, v.valor); });
+    estado.fixas.forEach((f) => { if (despesaPagaNoMes(f.id, ano, mes)) somaNoDia(saidas, f.diaVencimento, f.valor); });
+    estado.colaboradores.forEach((c) => { if (despesaPagaNoMes(c.id, ano, mes)) somaNoDia(saidas, c.diaPagamento, c.valor); });
+    estado.variaveis.forEach((v) => { const dia = diaNoMesAtual(v.data); if (dia && v.pago) somaNoDia(saidas, dia, v.valor); });
 
     let acumulado = 0;
     const saldo = entradas.map((e, i) => Number((acumulado += e - saidas[i]).toFixed(2)));
